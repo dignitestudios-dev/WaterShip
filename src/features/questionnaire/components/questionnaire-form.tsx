@@ -156,7 +156,9 @@ export const QuestionnaireForm = () => {
                           disabled={(date) =>
                             date > new Date() || date < new Date("1900-01-01")
                           }
-                        // initialFocus
+                          captionLayout="dropdown"
+                          startMonth={new Date(1900, 0)}
+                          endMonth={new Date()}
                         />
                       </PopoverContent>
                     </Popover>

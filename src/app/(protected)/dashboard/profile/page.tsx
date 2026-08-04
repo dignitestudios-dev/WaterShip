@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, HelpCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
+import { removeCookie } from "@/lib/cookie";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 export default function ProfilePage() {
@@ -28,7 +29,7 @@ export default function ProfilePage() {
 
   const handleLogout = () => {
     // Clear the token cookie
-    document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
+    removeCookie("token");
     // Redirect to login page
     router.push("/login");
   };

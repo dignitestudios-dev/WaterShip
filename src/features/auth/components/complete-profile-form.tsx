@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { z } from "zod";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { setCookie } from "@/lib/cookie";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { Calendar } from "@/components/ui/calendar";
@@ -29,6 +30,7 @@ export const CompleteProfileForm = () => {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [profilePic, setProfilePic] = useState<string | null>(null);
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
   const { register, handleSubmit, control, formState: { errors } } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
@@ -37,7 +39,7 @@ export const CompleteProfileForm = () => {
 
   const onSubmit = (data: ProfileFormData) => {
     // Set dummy token so middleware allows access to protected routes
-    document.cookie = "token=dummy_token_123; path=/";
+    setCookie("token", "dummy_token_123");
     // Include the profilePic (file or base64) in the actual API call
     router.push("/dashboard");
   };
@@ -113,7 +115,7 @@ export const CompleteProfileForm = () => {
               name="dob"
               control={control}
               render={({ field }) => (
-                <Popover>
+                <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
                   <PopoverTrigger >
                     <Button
                       type="button"
@@ -143,11 +145,16 @@ export const CompleteProfileForm = () => {
                     <Calendar
                       mode="single"
                       selected={field.value}
-                      onSelect={field.onChange}
+                      onSelect={(date) => {
+                        field.onChange(date);
+                        setIsDatePickerOpen(false);
+                      }}
                       disabled={(date) =>
                         date > new Date() || date < new Date("1900-01-01")
                       }
-                      // initialFocus
+                      captionLayout="dropdown"
+                      startMonth={new Date(1900, 0)}
+                      endMonth={new Date()}
                     />
                   </PopoverContent>
                 </Popover>
