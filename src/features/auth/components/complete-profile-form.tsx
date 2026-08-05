@@ -51,6 +51,11 @@ export const CompleteProfileForm = () => {
         toast.error("File size must be less than 5MB");
         return;
       }
+      const validTypes = ["image/webp", "image/png", "image/jpeg", "image/jpg"];
+      if (!validTypes.includes(file.type)) {
+        toast.error("File must be a WebP, PNG, or JPG image");
+        return;
+      }
       const url = URL.createObjectURL(file);
       setProfilePic(url);
     }

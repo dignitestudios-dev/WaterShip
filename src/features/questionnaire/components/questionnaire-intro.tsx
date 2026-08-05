@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { HelpCircle } from "lucide-react";
+import { HelpCircle, ChevronLeft } from "lucide-react";
 import { useProgressStore } from "../store/progress.store";
 import { useState, useEffect } from "react";
 
@@ -37,6 +37,14 @@ export const QuestionnaireIntro = () => {
   return (
     <div className="w-full min-h-screen relative overflow-hidden flex items-center justify-center bg-gradient-to-b from-[#034593] to-[#01152D]">
       
+      {/* Back Button */}
+      <button 
+        onClick={() => router.back()} 
+        className="absolute top-8 left-8 md:top-44 md:left-44 w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition z-50"
+      >
+        <ChevronLeft className="w-5 h-5 text-white" strokeWidth={2.5} />
+      </button>
+
       {/* Background Blobs */}
       <div className="absolute -top-[189px] left-[calc(50%-451px/2-738px)] w-[451px] h-[492px] bg-[#2186FF] opacity-45 blur-[203px] rounded-full pointer-events-none" />
       <div className="absolute -bottom-[167px] right-[-206px] w-[451px] h-[492px] bg-[#2186FF] opacity-45 blur-[203px] rounded-full pointer-events-none" />

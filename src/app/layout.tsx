@@ -10,8 +10,8 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "Next.js Production App",
-  description: "Production grade Next.js App Router project setup",
+  title: "Waterhip | Financial Consultant Platform",
+  description: "Financial Consultant Platform",
 };
 
 export default function RootLayout({
@@ -20,8 +20,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${poppins.className} h-full antialiased`} suppressHydrationWarning>
-      <body className="min-h-full flex flex-col font-sans bg-background text-foreground" suppressHydrationWarning>
+    <html suppressHydrationWarning lang="en" className={`${poppins.className} h-full antialiased`} >
+      <body suppressHydrationWarning className="min-h-full flex flex-col font-sans bg-background text-foreground">
         <QueryProvider>
           {children}
           <Toaster />
