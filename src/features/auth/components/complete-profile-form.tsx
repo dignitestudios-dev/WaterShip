@@ -84,7 +84,7 @@ export const CompleteProfileForm = () => {
           />
           <div
             onClick={() => fileInputRef.current?.click()}
-            className="relative w-[132px] h-[132px] bg-white/15 rounded-[17px] flex items-center justify-center cursor-pointer hover:bg-white/20 border border-dashed border-[#2186FF] overflow-hidden"
+            className="relative w-[132px] h-[132px] bg-white/15 rounded-full flex items-center justify-center cursor-pointer hover:bg-white/20 border border-dashed border-[#2186FF] overflow-hidden"
           >
             {profilePic ? (
               <Image src={profilePic} alt="Profile preview" fill className="object-cover" />
