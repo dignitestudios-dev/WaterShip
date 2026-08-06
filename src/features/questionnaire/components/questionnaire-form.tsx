@@ -474,7 +474,7 @@ export const QuestionnaireForm = () => {
             </div>
 
             {/* Bottom Actions */}
-            <div className=" max-w-full mr-auto mt-[40px] flex flex-col items-start gap-[40px]">
+            <div className=" max-w-full mr-auto  flex flex-col items-start gap-[40px]">
 
               <FormField
                 control={form.control}
@@ -485,7 +485,7 @@ export const QuestionnaireForm = () => {
                       <Checkbox
                         checked={field.value}
                         onCheckedChange={field.onChange}
-                        className="bg-transparent border-white/30 checked:bg-[#2186FF]!  data-[state=checked]:bg-[#2186FF]! data-[state=checked]:text-white rounded-[4px]"
+                        className="bg-transparent border-white/30 data-checked:!bg-[#2186FF] data-checked:!border-[#2186FF] data-checked:text-white rounded-[4px]"
                       />
                     </FormControl>
                     <FormLabel className="text-[#E0E0E0] font-medium text-[14px] leading-[21px]">
