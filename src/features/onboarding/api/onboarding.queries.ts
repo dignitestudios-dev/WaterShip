@@ -14,6 +14,7 @@ import {
   completeDocumentUpload,
   bookAppointment
 } from "./onboarding.api";
+import { getApiErrorMessage } from "@/lib/api-response";
 
 export const useOnboardingProgress = () => {
   return useQuery({
@@ -53,7 +54,8 @@ export const useSaveQuestionnaireDraft = () => {
       toast.success(data.message || "Draft saved");
     },
     onError: (error: any) => {
-      toast.error(error?.response?.data?.message || "Failed to save draft");
+      const message = getApiErrorMessage(error, "Failed to save draft");
+      toast.error(message);
     }
   });
 };
@@ -68,7 +70,8 @@ export const useCompleteQuestionnaireStep = () => {
       toast.success(data.message || "Step completed");
     },
     onError: (error: any) => {
-      toast.error(error?.response?.data?.message || "Failed to complete step");
+      const message = getApiErrorMessage(error, "Failed to complete step");
+      toast.error(message);
     }
   });
 };
@@ -86,7 +89,8 @@ export const useCompleteRiskAssessment = () => {
       }
     },
     onError: (error: any) => {
-      toast.error(error?.response?.data?.message || "Failed to complete risk assessment");
+      const message = getApiErrorMessage(error, "Failed to complete risk assessment");
+      toast.error(message);
     }
   });
 };
@@ -101,7 +105,8 @@ export const useUploadDocument = () => {
       toast.success(data.message || "Document uploaded");
     },
     onError: (error: any) => {
-      toast.error(error?.response?.data?.message || "Failed to upload document");
+      const message = getApiErrorMessage(error, "Failed to upload document");
+      toast.error(message);
     }
   });
 };
@@ -116,7 +121,8 @@ export const useCompleteDocumentUpload = () => {
       toast.success(data.message || "Document step completed");
     },
     onError: (error: any) => {
-      toast.error(error?.response?.data?.message || "Failed to complete document step");
+      const message = getApiErrorMessage(error, "Failed to complete document step");
+      toast.error(message);
     }
   });
 };
@@ -131,7 +137,8 @@ export const useBookAppointment = () => {
       toast.success(data.message || "Appointment booked successfully");
     },
     onError: (error: any) => {
-      toast.error(error?.response?.data?.message || "Failed to book appointment");
+      const message = getApiErrorMessage(error, "Failed to book appointment");
+      toast.error(message);
     }
   });
 };

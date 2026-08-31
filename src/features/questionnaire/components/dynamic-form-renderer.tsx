@@ -51,27 +51,23 @@ export const DynamicFormRenderer = ({ questions, onComplete, onSaveDraft }: Dyna
 
   // Dynamically build Zod schema
   const generateSchema = (qs: QuestionnaireQuestion[]) => {
-    const schemaObj: any = {};
+    const schemaObj: Record<string, z.ZodTypeAny> = {};
     
     const addQuestionToSchema = (q: QuestionnaireQuestion) => {
-      let fieldSchema: any = z.any();
+      let fieldSchema: z.ZodTypeAny = z.any();
 
       if (q.questionType === "text" || q.questionType === "radio" || q.questionType === "select" || q.questionType === "dropdown") {
-        fieldSchema = z.string().trim();
-        if (q.required) fieldSchema = fieldSchema.min(1, "This field is required");
-        else fieldSchema = fieldSchema.optional();
+        let strSchema = z.string().trim();
+        fieldSchema = q.required ? strSchema.min(1, "This field is required") : strSchema.optional();
       } else if (q.questionType === "number") {
-        fieldSchema = z.string().trim();
-        if (q.required) fieldSchema = fieldSchema.min(1, "This field is required");
-        else fieldSchema = fieldSchema.optional();
+        let numSchema = z.string().trim();
+        fieldSchema = q.required ? numSchema.min(1, "This field is required") : numSchema.optional();
       } else if (q.questionType === "date") {
-        fieldSchema = z.date();
-        // Zod date validation
-        if (!q.required) fieldSchema = fieldSchema.optional();
+        let dateSchema = z.date();
+        fieldSchema = q.required ? dateSchema : dateSchema.optional();
       } else if (q.questionType === "checkbox") {
-        fieldSchema = z.boolean();
-        if (q.required) fieldSchema = fieldSchema.refine((val: any) => val === true, "Must be checked");
-        else fieldSchema = fieldSchema.optional();
+        let boolSchema = z.boolean();
+        fieldSchema = q.required ? boolSchema.refine((val: boolean) => val === true, "Must be checked") : boolSchema.optional();
       }
       
       schemaObj[q.questionId] = fieldSchema;
@@ -89,7 +85,7 @@ export const DynamicFormRenderer = ({ questions, onComplete, onSaveDraft }: Dyna
 
   const dynamicSchema = generateSchema(questions);
 
-  const form = useForm({
+  const form = useForm<Record<string, any>>({
     resolver: zodResolver(dynamicSchema),
     defaultValues: {}, 
     reValidateMode: "onChange",
@@ -135,7 +131,7 @@ export const DynamicFormRenderer = ({ questions, onComplete, onSaveDraft }: Dyna
                     type={q.questionType === "number" ? "number" : "text"}
                     placeholder="Enter answer" 
                     {...field} 
-                    value={field.value || ""}
+                    value={typeof field.value === "string" || typeof field.value === "number" ? field.value : ""}
                     className="bg-white/15 border-none rounded-[7px] text-white placeholder:text-white/50 h-[40px]!" 
                   />
                 </FormControl>
@@ -160,27 +156,25 @@ export const DynamicFormRenderer = ({ questions, onComplete, onSaveDraft }: Dyna
               {/* Date */}
               {q.questionType === "date" && (
                 <Popover>
-                  <PopoverTrigger asChild>
-                    <FormControl>
-                      <Button
-                        variant={"outline"}
-                        className={cn(
-                          "w-full h-[40px]! bg-white/15 border-none rounded-[7px] text-left font-normal hover:bg-white/20 hover:text-white",
-                          !field.value ? "text-[#E0E0E0]" : "text-white"
-                        )}
-                      >
-                        {field.value ? format(field.value, "d MMMM yyyy") : <span>Pick a date</span>}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50 text-[#E0E0E0]" />
-                      </Button>
-                    </FormControl>
+                  <PopoverTrigger>
+                    <Button
+                      type="button"
+                      variant={"outline"}
+                      className={cn(
+                        "w-full h-[40px]! bg-white/15 border-none rounded-[7px] text-left font-normal hover:bg-white/20 hover:text-white",
+                        !field.value ? "text-[#E0E0E0]" : "text-white"
+                      )}
+                    >
+                      {field.value instanceof Date || typeof field.value === "string" ? format(new Date(field.value), "d MMMM yyyy") : <span>Pick a date</span>}
+                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50 text-[#E0E0E0]" />
+                    </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
                     <Calendar
                       mode="single"
-                      selected={field.value}
+                      selected={field.value instanceof Date ? field.value : undefined}
                       onSelect={(date) => field.onChange(date)}
                       disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
-                      initialFocus
                     />
                   </PopoverContent>
                 </Popover>
@@ -191,7 +185,7 @@ export const DynamicFormRenderer = ({ questions, onComplete, onSaveDraft }: Dyna
                 <>
                   <FormControl>
                     <Checkbox
-                      checked={field.value}
+                      checked={Boolean(field.value)}
                       onCheckedChange={field.onChange}
                       className="bg-transparent border-white/30 data-checked:!bg-[#2186FF] data-checked:!border-[#2186FF] data-checked:text-white rounded-[4px]"
                     />
@@ -229,7 +223,7 @@ export const DynamicFormRenderer = ({ questions, onComplete, onSaveDraft }: Dyna
           <div className="max-w-full mr-auto flex flex-col items-start gap-[40px]">
             <div className="flex flex-row gap-[15px] items-center">
               <Dialog open={isSaveDialogOpen} onOpenChange={setIsSaveDialogOpen}>
-                <DialogTrigger asChild>
+                <DialogTrigger>
                   <Button
                     type="button"
                     variant="outline"
@@ -249,7 +243,7 @@ export const DynamicFormRenderer = ({ questions, onComplete, onSaveDraft }: Dyna
                     </p>
                   </div>
                   <div className="absolute bottom-[39px] flex flex-row items-center gap-[5px] w-[289px] justify-center">
-                    <DialogClose asChild>
+                    <DialogClose>
                       <button className="w-[142px] h-[51px] bg-white/15 rounded-[73px] flex items-center justify-center text-[14px] text-white hover:bg-white/20 transition">
                         Cancel
                       </button>

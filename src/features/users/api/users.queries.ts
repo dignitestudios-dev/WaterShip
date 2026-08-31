@@ -5,6 +5,7 @@ import { completeProfile, getMe, updateProfile, getUsers, getUserById, deleteUse
 import { CompleteProfilePayload, UpdateProfilePayload } from "../types/users.types";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { getApiErrorMessage } from "@/lib/api-response";
 
 export const useGetMe = (options?: { enabled?: boolean }) => {
   return useQuery({
@@ -27,7 +28,8 @@ export const useCompleteProfile = () => {
       router.push("/dashboard");
     },
     onError: (error: any) => {
-      toast.error(error?.response?.data?.message || "Failed to complete profile");
+      const message = getApiErrorMessage(error, "Failed to complete profile");
+      toast.error(message);
     },
   });
 };
@@ -42,7 +44,8 @@ export const useUpdateProfile = () => {
       queryClient.invalidateQueries({ queryKey: ["users", "me"] });
     },
     onError: (error: any) => {
-      toast.error(error?.response?.data?.message || "Failed to update profile");
+      const message = getApiErrorMessage(error, "Failed to update profile");
+      toast.error(message);
     },
   });
 };
@@ -67,12 +70,13 @@ export const useDeleteUser = () => {
 
   return useMutation({
     mutationFn: deleteUser,
-    onSuccess: () => {
-      toast.success("User deleted successfully");
+    onSuccess: (data) => {
+      toast.success(data?.message || "User deleted successfully");
       queryClient.invalidateQueries({ queryKey: ["users"] });
     },
     onError: (error: any) => {
-      toast.error(error?.response?.data?.message || "Failed to delete user");
+      const message = getApiErrorMessage(error, "Failed to delete user");
+      toast.error(message);
     },
   });
 };

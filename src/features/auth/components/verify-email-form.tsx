@@ -10,7 +10,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { useState } from "react";
-import { useVerifyOtp } from "../api/auth.mutations";
+import { useVerifyOtp, useResendOtp } from "../api/auth.mutations";
+import { useEffect } from "react";
 
 const verifySchema = z.object({
   code1: z.string().min(1),
@@ -26,7 +27,16 @@ export const VerifyEmailForm = () => {
   const searchParams = useSearchParams();
   const email = searchParams.get("email") || "";
   const verifyMutation = useVerifyOtp();
+  const resendMutation = useResendOtp();
   const [status, setStatus] = useState<"idle" | "loading" | "success">("idle");
+  const [resendTimer, setResendTimer] = useState<number>(30);
+
+  useEffect(() => {
+    if (resendTimer > 0) {
+      const timer = setTimeout(() => setResendTimer((prev) => prev - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendTimer]);
 
   const { register, handleSubmit, watch, setValue } = useForm<VerifyFormData>({
     resolver: zodResolver(verifySchema),
@@ -59,6 +69,15 @@ export const VerifyEmailForm = () => {
         }
       }
     );
+  };
+
+  const handleResend = () => {
+    if (!email || resendTimer > 0 || resendMutation.isPending) return;
+    resendMutation.mutate(email, {
+      onSuccess: () => {
+        setResendTimer(30);
+      },
+    });
   };
 
   const handleInput = (
@@ -201,7 +220,19 @@ export const VerifyEmailForm = () => {
           </Button>
           
           <p className="text-center font-normal text-[14px] leading-[21px] text-[#E0E0E0]">
-            Didn't receive code? <span className="font-semibold text-white cursor-pointer hover:underline">Resend in 0:14</span>
+            Didn't receive code?{" "}
+            {resendTimer > 0 ? (
+              <span className="font-semibold text-white/70">
+                Resend in 0:{resendTimer < 10 ? `0${resendTimer}` : resendTimer}
+              </span>
+            ) : (
+              <span
+                onClick={handleResend}
+                className="font-semibold text-white cursor-pointer hover:underline"
+              >
+                {resendMutation.isPending ? "Resending..." : "Resend Code"}
+              </span>
+            )}
           </p>
         </form>
       </div>

@@ -24,7 +24,7 @@ export default function RootLayout({
       <body suppressHydrationWarning className="min-h-full flex flex-col font-sans bg-background text-foreground">
         <QueryProvider>
           {children}
-      
+          <Toaster />
         </QueryProvider>
       </body>
     </html>

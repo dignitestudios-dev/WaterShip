@@ -39,12 +39,23 @@ api.interceptors.request.use(
 
 api.interceptors.response.use(
   (response: AxiosResponse) => {
+    // If backend returns HTTP 200 but includes an envelope with success: false
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      response.data.success === false
+    ) {
+      const error: any = new Error(response.data.message || "Request failed");
+      error.response = response;
+      error.data = response.data;
+      return Promise.reject(error);
+    }
     return response;
   },
   (error: AxiosError) => {
     if (error.response?.status === 401) {
       removeCookie("token");
-      if (typeof window !== "undefined") {
+      if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login") && !window.location.pathname.startsWith("/verify-email")) {
         window.location.href = "/login";
       }
     }
