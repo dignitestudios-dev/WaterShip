@@ -1,42 +1,60 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
-import { login, register, logout } from "./auth.api";
-import { AuthResponse, LoginCredentials, RegisterCredentials } from "../types/auth.types";
+import { authenticate, verifyOtp, resendOtp, logout, checkEmail, updateFcm, sendDeleteOtp, deleteAccount } from "./auth.api";
+import {
+  AuthLoginPayload,
+  AuthVerifyOtpPayload,
+  AuthUpdateFcmPayload,
+  AuthDeleteConfirmPayload,
+  AuthCheckEmailPayload
+} from "../types/auth.types";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { setCookie, removeCookie } from "@/lib/cookie";
 
-export const useLogin = () => {
-  const router = useRouter();
-
-  return useMutation<AuthResponse, Error, LoginCredentials>({
-    mutationFn: login,
+export const useAuthenticate = () => {
+  return useMutation({
+    mutationFn: authenticate,
     onSuccess: (data) => {
-      // Typically, you would save the token to cookies or state here
-      // For this example, let's assume it's set in HttpOnly cookies by the backend
-      // or we can set it here for the middleware to read
-      document.cookie = `token=${data.token}; path=/`;
-      toast.success("Logged in successfully");
-      router.push("/dashboard");
+      // Social login returns token directly
+      if (data.data?.token) {
+        setCookie("token", data.data.token);
+      }
+      toast.success(data.message || "Authentication successful");
     },
-    onError: (error) => {
-      toast.error(error.message || "Failed to login");
+    onError: (error: any) => {
+      toast.error(error);
     },
   });
 };
 
-export const useRegister = () => {
+export const useVerifyOtp = () => {
   const router = useRouter();
 
-  return useMutation<AuthResponse, Error, RegisterCredentials>({
-    mutationFn: register,
+  return useMutation({
+    mutationFn: verifyOtp,
     onSuccess: (data) => {
-      document.cookie = `token=${data.token}; path=/`;
-      toast.success("Registered successfully");
+      if (data.data?.token) {
+        setCookie("token", data.data.token);
+      }
+      toast.success(data.message || "OTP Verified Successfully");
       router.push("/dashboard");
     },
-    onError: (error) => {
-      toast.error(error.message || "Failed to register");
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || "Invalid or expired OTP");
+    },
+  });
+};
+
+export const useResendOtp = () => {
+  return useMutation({
+    mutationFn: resendOtp,
+    onSuccess: (data) => {
+      toast.success(data.message || "OTP sent successfully");
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || "Failed to resend OTP");
     },
   });
 };
@@ -44,12 +62,16 @@ export const useRegister = () => {
 export const useLogout = () => {
   const router = useRouter();
 
-  return useMutation<void, Error, void>({
+  return useMutation({
     mutationFn: logout,
     onSuccess: () => {
-      document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
-      toast.success("Logged out");
+      removeCookie("token");
+      toast.success("Logged out successfully");
       router.push("/login");
     },
+    onError: (error: any) => {
+      removeCookie("token"); // clear token anyway if backend fails
+      router.push("/login");
+    }
   });
 };

@@ -3,31 +3,40 @@
 import { Stepper, StepCard } from "@/features/dashboard";
 import { useRouter } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
-import { useProgressStore } from "@/features/questionnaire/store/progress.store";
+import { useOnboardingProgress } from "@/features/onboarding/api/onboarding.queries";
+import { Skeleton } from "@/components/ui/skeleton";
 
 function DashboardContent() {
   const router = useRouter();
+
+  const { data: progressResponse, isLoading } = useOnboardingProgress();
+  const onboardingData = progressResponse?.data;
+
+  const isCompleted = onboardingData?.questionnaire?.status === "completed";
+  const completedSubsteps = onboardingData?.questionnaire?.completedSubsteps || [];
+  const maxUnlockedStep = isCompleted ? 5 : (completedSubsteps.length > 0 ? Math.max(...completedSubsteps) + 1 : 1);
   
-  // Need to ensure Zustand is hydrated on client before rendering to avoid hydration mismatch
-  const [mounted, setMounted] = useState(false);
-  const maxUnlockedStep = useProgressStore((state) => state.maxUnlockedStep);
-  const isCompleted = useProgressStore((state) => state.isCompleted);
-  const isRiskAssessmentCompleted = useProgressStore((state) => state.isRiskAssessmentCompleted);
-  const uploadedDocuments = useProgressStore((state) => state.uploadedDocuments);
-  const isAppointmentBooked = useProgressStore((state) => state.isAppointmentBooked);
+  const isRiskAssessmentCompleted = onboardingData?.riskAssessment?.status === "completed";
+  
+  const uploadedDocuments = onboardingData?.documentUpload?.uploadedDocuments || [];
+  const numUploaded = uploadedDocuments.length;
+  const isDocumentUploadCompleted = onboardingData?.documentUpload?.status === "completed" || numUploaded === 4;
 
-  const numUploaded = Object.keys(uploadedDocuments).length;
-  const isDocumentUploadCompleted = numUploaded === 4;
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
+  const isAppointmentBooked = onboardingData?.booking?.status === "completed";
   const progress = isCompleted ? 100 : Math.round(((maxUnlockedStep - 1) / 4) * 100);
   const subtitle = isCompleted ? "Completed" : `${maxUnlockedStep - 1} of 4 steps completed`;
 
-  if (!mounted) {
-    return <div className="w-full h-screen flex flex-col items-center justify-center bg-gradient-to-b from-[#034593] to-[#01152D]" />;
+  if ( isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-start w-full min-h-full py-10 px-4">
+        <Skeleton className="w-full max-w-[701px] h-20 mb-8 rounded-full bg-white/10" />
+        <div className="w-full max-w-[701px] mx-auto grid grid-cols-1 md:grid-cols-2 gap-x-[15px] gap-y-[15px]">
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="w-full h-[140px] rounded-[18px] bg-white/10" />
+          ))}
+        </div>
+      </div>
+    );
   }
 
   return (

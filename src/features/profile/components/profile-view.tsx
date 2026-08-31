@@ -4,8 +4,11 @@ import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, HelpCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
-import { removeCookie } from "@/lib/cookie";
+import { removeCookie, getCookie } from "@/lib/cookie";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { useGetMe } from "@/features/users/api/users.queries";
+import Image from "next/image";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export const ProfileView = () => {
   const router = useRouter();
@@ -13,9 +16,18 @@ export const ProfileView = () => {
   const [openSection, setOpenSection] = useState<string[]>(["Personal Information", "Privacy & Security"]);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   
+  const hasToken = !!getCookie("token");
+  const { data: getMeResponse, isLoading } = useGetMe({ enabled: mounted && hasToken });
+  const user = getMeResponse?.data;
+  const fullName = user?.firstName && user?.lastName 
+    ? `${user.firstName} ${user.lastName}` 
+    : user?.firstName || user?.lastName || "User";
+  const email = user?.email || "";
+
   useEffect(() => {
     setMounted(true);
   }, []);
+
 
   const toggleSection = (section: string) => {
     setOpenSection(prev => 
@@ -52,13 +64,26 @@ export const ProfileView = () => {
       <div className="flex flex-col items-center w-full max-w-[568px] z-10 mt-20 gap-[30px] px-[20px]">
         {/* Profile Info Header */}
         <div className="flex flex-col items-center gap-[10px]">
-          <div className="w-[94px] h-[94px] rounded-full border-[2px] border-white overflow-hidden relative">
-             {/* Real image if available, else placeholder */}
-             <img src="/images/avatar.jpg" alt="Olivia Rose" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src = 'https://ui-avatars.com/api/?name=Olivia+Rose&background=0D8ABC&color=fff'; }} />
+          <div className="w-[94px] h-[94px] rounded-full border-[2px] border-white overflow-hidden relative flex items-center justify-center bg-gray-200">
+             {isLoading ? (
+               <Skeleton className="w-full h-full rounded-full bg-white/20" />
+             ) : user?.profilePicture?.location ? (
+               <Image src={user.profilePicture.location} alt={fullName} width={100} height={100} className="w-full h-full object-cover" />
+             ) : (
+               <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=0D8ABC&color=fff`} alt={fullName} className="w-full h-full object-cover" />
+             )}
           </div>
           <div className="flex flex-col items-center gap-[4px]">
-            <h2 className="font-normal text-[21.31px] leading-[32px] tracking-[-0.01em] text-white">Olivia Rose</h2>
-            <a href="mailto:client@adamsapp.com" className="font-normal text-[11.84px] leading-[18px] underline text-[#E0E0E0]">client@adamsapp.com</a>
+            {isLoading ? (
+              <Skeleton className="h-6 w-32 bg-white/20 mb-1" />
+            ) : (
+              <h2 className="font-normal text-[21.31px] leading-[32px] tracking-[-0.01em] text-white">{fullName}</h2>
+            )}
+            {isLoading ? (
+              <Skeleton className="h-4 w-40 bg-white/20" />
+            ) : (
+              <a href={email ? `mailto:${email}` : "#"} className="font-normal text-[11.84px] leading-[18px] underline text-[#E0E0E0]">{email}</a>
+            )}
           </div>
         </div>
 
@@ -85,16 +110,16 @@ export const ProfileView = () => {
                     <span className="font-medium text-[14px] leading-[21px] tracking-[-0.01em] text-[#E0E0E0] w-[50px]">
                       Name:
                     </span>
-                    <span className="font-normal text-[14px] leading-[21px] tracking-[-0.01em] text-[#E0E0E0]">
-                      Olivia Rose
+                    <span className="font-normal text-[14px] leading-[21px] tracking-[-0.01em] text-[#E0E0E0] flex-1">
+                      {isLoading ? <Skeleton className="h-4 w-3/4 bg-white/20" /> : fullName}
                     </span>
                   </div>
                   <div className="flex items-center gap-[10px]">
                     <span className="font-medium text-[14px] leading-[21px] tracking-[-0.01em] text-[#E0E0E0] w-[50px]">
                       Email:
                     </span>
-                    <span className="font-normal text-[14px] leading-[21px] text-[#E0E0E0]">
-                      client@adamsapp.com
+                    <span className="font-normal text-[14px] leading-[21px] text-[#E0E0E0] flex-1">
+                      {isLoading ? <Skeleton className="h-4 w-full bg-white/20" /> : email}
                     </span>
                   </div>
                 </div>

@@ -1,22 +1,35 @@
 import axios, { InternalAxiosRequestConfig, AxiosResponse, AxiosError } from "axios";
+import { getCookie, removeCookie } from "./cookie";
 
 export const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000/api",
+  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.dev.watership.app",
   headers: {
     "Content-Type": "application/json",
   },
-  withCredentials: true,
+  // withCredentials: true,
 });
+
+const getDeviceUniqueId = () => {
+  if (typeof window === "undefined") return "server-id";
+  let id = localStorage.getItem("deviceuniqueid");
+  if (!id) {
+    id = "device_" + Math.random().toString(36).substr(2, 9);
+    localStorage.setItem("deviceuniqueid", id);
+  }
+  return id;
+};
 
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    // In a real app, you might attach a token from a client-side cookie or state here,
-    // if not relying purely on HttpOnly cookies.
-    // Example:
-    // const token = getCookie("token");
-    // if (token) {
-    //   config.headers.Authorization = `Bearer ${token}`;
-    // }
+    const token = getCookie("token");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    
+    // Auth requirements for this specific backend
+    config.headers["deviceuniqueid"] = getDeviceUniqueId();
+    config.headers["devicemodel"] = typeof window !== "undefined" ? navigator.userAgent : "Server";
+
     return config;
   },
   (error: AxiosError) => {
@@ -30,7 +43,7 @@ api.interceptors.response.use(
   },
   (error: AxiosError) => {
     if (error.response?.status === 401) {
-      // Handle unauthorized errors (e.g., redirect to login, clear local storage)
+      removeCookie("token");
       if (typeof window !== "undefined") {
         window.location.href = "/login";
       }

@@ -15,6 +15,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
+import { useCompleteProfile } from "@/features/users/api/users.queries";
 
 const profileSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -28,6 +29,7 @@ type ProfileFormData = z.infer<typeof profileSchema>;
 
 export const CompleteProfileForm = () => {
   const router = useRouter();
+  const completeProfileMutation = useCompleteProfile();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [profilePic, setProfilePic] = useState<string | null>(null);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
@@ -38,10 +40,19 @@ export const CompleteProfileForm = () => {
   });
 
   const onSubmit = (data: ProfileFormData) => {
-    // Set dummy token so middleware allows access to protected routes
-    setCookie("token", "dummy_token_123");
-    // Include the profilePic (file or base64) in the actual API call
-    router.push("/dashboard");
+    const payload: any = {
+      firstName: data.name.split(" ")[0] || "",
+      lastName: data.name.split(" ").slice(1).join(" ") || "",
+      dob: format(data.dob, "yyyy-MM-dd"),
+      primaryAddress: data.address,
+    };
+
+    const file = fileInputRef.current?.files?.[0];
+    if (file) {
+      payload.profilePicture = file;
+    }
+
+    completeProfileMutation.mutate(payload);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -185,8 +196,9 @@ export const CompleteProfileForm = () => {
           type="submit"
           variant="rounded-blue"
           className="w-full mt-4"
+          disabled={completeProfileMutation.isPending}
         >
-          Continue
+          {completeProfileMutation.isPending ? "Saving..." : "Continue"}
         </Button>
       </form>
     </div>
