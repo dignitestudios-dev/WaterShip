@@ -4,12 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ChevronLeft, Loader2, Check } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { useState } from "react";
+import { useVerifyOtp, useResendOtp } from "../api/auth.mutations";
+import { useEffect } from "react";
 
 const verifySchema = z.object({
   code1: z.string().min(1),
@@ -22,7 +24,19 @@ type VerifyFormData = z.infer<typeof verifySchema>;
 
 export const VerifyEmailForm = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const email = searchParams.get("email") || "";
+  const verifyMutation = useVerifyOtp();
+  const resendMutation = useResendOtp();
   const [status, setStatus] = useState<"idle" | "loading" | "success">("idle");
+  const [resendTimer, setResendTimer] = useState<number>(30);
+
+  useEffect(() => {
+    if (resendTimer > 0) {
+      const timer = setTimeout(() => setResendTimer((prev) => prev - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendTimer]);
 
   const { register, handleSubmit, watch, setValue } = useForm<VerifyFormData>({
     resolver: zodResolver(verifySchema),
@@ -33,15 +47,37 @@ export const VerifyEmailForm = () => {
   const isValid = codes.every((code) => code.length === 1);
 
   const onSubmit = (data: VerifyFormData) => {
+    if (!email) {
+      router.push("/login");
+      return;
+    }
+    
     setStatus("loading");
-    // Mock network request
-    setTimeout(() => {
-      setStatus("success");
-      // Redirect after showing success
-      setTimeout(() => {
-        router.push("/complete-profile");
-      }, 2000);
-    }, 2000);
+    const otp = `${data.code1}${data.code2}${data.code3}${data.code4}`;
+    
+    verifyMutation.mutate(
+      { email, otp },
+      {
+        onSuccess: () => {
+          setStatus("success");
+          setTimeout(() => {
+            router.push("/complete-profile");
+          }, 2000);
+        },
+        onError: () => {
+          setStatus("idle");
+        }
+      }
+    );
+  };
+
+  const handleResend = () => {
+    if (!email || resendTimer > 0 || resendMutation.isPending) return;
+    resendMutation.mutate(email, {
+      onSuccess: () => {
+        setResendTimer(30);
+      },
+    });
   };
 
   const handleInput = (
@@ -129,7 +165,7 @@ export const VerifyEmailForm = () => {
             Verify Email
           </h1>
           <p className="font-normal text-[16px] leading-[140%] text-[#E0E0E0]">
-            Enter the code sent to *****nt@adamsapp.com
+            Enter the code sent to {email || "*****@example.com"}
           </p>
         </div>
 
@@ -177,14 +213,26 @@ export const VerifyEmailForm = () => {
             type="submit"
             variant="rounded-blue"
             className="w-full"
-            disabled={!isValid}
-            style={{ opacity: isValid ? 1 : 0.65 }}
+            disabled={!isValid || verifyMutation.isPending}
+            style={{ opacity: isValid && !verifyMutation.isPending ? 1 : 0.65 }}
           >
-            Verify Email
+            {verifyMutation.isPending ? "Verifying..." : "Verify Email"}
           </Button>
           
           <p className="text-center font-normal text-[14px] leading-[21px] text-[#E0E0E0]">
-            Didn't receive code? <span className="font-semibold text-white cursor-pointer hover:underline">Resend in 0:14</span>
+            Didn't receive code?{" "}
+            {resendTimer > 0 ? (
+              <span className="font-semibold text-white/70">
+                Resend in 0:{resendTimer < 10 ? `0${resendTimer}` : resendTimer}
+              </span>
+            ) : (
+              <span
+                onClick={handleResend}
+                className="font-semibold text-white cursor-pointer hover:underline"
+              >
+                {resendMutation.isPending ? "Resending..." : "Resend Code"}
+              </span>
+            )}
           </p>
         </form>
       </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRegister } from "../api/auth.mutations";
+import { useAuthenticate } from "../api/auth.mutations";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,7 +20,7 @@ const registerSchema = z.object({
 type RegisterFormData = z.infer<typeof registerSchema>;
 
 export const RegisterForm = () => {
-  const registerMutation = useRegister();
+  const registerMutation = useAuthenticate();
 
   const router = useRouter();
 
@@ -34,9 +34,18 @@ export const RegisterForm = () => {
   });
 
   const onSubmit = (data: RegisterFormData) => {
-    // Currently bypassing API call for frontend testing
-    // registerMutation.mutate(data);
-    router.push("/verify-email");
+    registerMutation.mutate(
+      { method: "email", email: data.email },
+      {
+        onSuccess: (res) => {
+          if (res.data?.otpVerificationRequired) {
+            router.push("/verify-email?email=" + encodeURIComponent(data.email));
+          } else if (res.data?.token) {
+            router.push("/dashboard");
+          }
+        }
+      }
+    );
   };
 
   return (

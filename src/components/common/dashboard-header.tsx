@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { Bell } from "lucide-react";
+import { Bell, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { getCookie } from "@/lib/cookie";
+import { useGetMe } from "@/features/users/api/users.queries";
 
 export const DashboardHeader = () => {
   const router = useRouter();
@@ -13,6 +14,12 @@ export const DashboardHeader = () => {
   useEffect(() => {
     setHasToken(!!getCookie("token"));
   }, []);
+
+  const { data: getMeResponse, isLoading } = useGetMe({ enabled: hasToken });
+  const user = getMeResponse?.data;
+  const fullName = user?.firstName && user?.lastName 
+    ? `${user.firstName} ${user.lastName}` 
+    : user?.firstName || user?.lastName || "User";
 
   return (
     <header className="w-full h-[115px] bg-gradient-to-r from-white from-60% to-[#E4F0FB] shadow-[0px_0px_30px_rgba(255,255,255,0.15)] flex items-center justify-between px-6 lg:px-[130px] z-50 relative">
@@ -52,14 +59,16 @@ export const DashboardHeader = () => {
               <span className="text-[#727272] text-[12px] leading-[18px] tracking-[-0.01em]">
                 Good Evening!
               </span>
-              <span className="text-[#727272] text-[20px] leading-[30px] tracking-[-0.01em] font-normal">
-                Olivia Rose
+              <span className="text-[#727272] text-[20px] leading-[30px] tracking-[-0.01em] font-normal truncate max-w-[150px]">
+                {isLoading ? "Loading..." : fullName}
               </span>
             </div>
-            <div className="w-[38px] h-[38px] rounded-full border-[1.5px] border-[#DDEBF8] overflow-hidden bg-gray-200">
-              {/* If there was a real avatar it would go here. For now a placeholder */}
-              <Image src={"/images/img.webp"} alt="image" width={100} height={100} className="w-full h-full object-cover" />
-              {/* <div className="w-full h-full bg-slate-300" /> */}
+            <div className="w-[38px] h-[38px] rounded-full border-[1.5px] border-[#DDEBF8] overflow-hidden bg-gray-200 flex items-center justify-center">
+              {user?.profilePicture?.location ? (
+                <Image src={user.profilePicture.location} alt="Profile Picture" width={100} height={100} className="w-full h-full object-cover" />
+              ) : (
+                <User className="text-gray-400 w-5 h-5" />
+              )}
             </div>
           </div>
         </div>
