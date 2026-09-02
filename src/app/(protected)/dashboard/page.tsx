@@ -10,23 +10,81 @@ function DashboardContent() {
   const router = useRouter();
 
   const { data: progressResponse, isLoading } = useOnboardingProgress();
-  const onboardingData = progressResponse?.data;
+  const rawData: any = progressResponse?.data;
+  const onboardingData = rawData?.onboarding || rawData;
 
-  const isCompleted = onboardingData?.questionnaire?.status === "completed";
-  const completedSubsteps = onboardingData?.questionnaire?.completedSubsteps || [];
-  const maxUnlockedStep = isCompleted ? 5 : (completedSubsteps.length > 0 ? Math.max(...completedSubsteps) + 1 : 1);
-  
+  // Step 1: Questionnaire
+  const questionnaireStatus = onboardingData?.questionnaire?.status;
+  const isQuestionnaireCompleted = questionnaireStatus === "completed";
+  const completedSubstepsRaw = onboardingData?.questionnaire?.completedSubsteps;
+  const completedCount = typeof completedSubstepsRaw === "number"
+    ? completedSubstepsRaw
+    : Array.isArray(completedSubstepsRaw)
+      ? completedSubstepsRaw.length
+      : isQuestionnaireCompleted
+        ? 4
+        : 0;
+  const totalQuestionnaireSteps = onboardingData?.questionnaire?.totalSubsteps || 4;
+  const questionnaireProgress = isQuestionnaireCompleted
+    ? 100
+    : Math.round((completedCount / totalQuestionnaireSteps) * 100);
+  const questionnaireSubtitle = isQuestionnaireCompleted
+    ? `${totalQuestionnaireSteps} of ${totalQuestionnaireSteps} steps completed`
+    : `${completedCount} of ${totalQuestionnaireSteps} steps completed`;
+
+  // Step 2: Risk Assessment
   const isRiskAssessmentCompleted = onboardingData?.riskAssessment?.status === "completed";
-  
+  const riskProgress = isRiskAssessmentCompleted ? 100 : 0;
+  const riskSubtitle = isRiskAssessmentCompleted
+    ? "Completed"
+    : "Start Risk Assessment";
+  const riskBadge: "completed" | "incomplete" | undefined = isRiskAssessmentCompleted
+    ? "completed"
+    : "incomplete";
+
+  // Step 3: Document Upload
   const uploadedDocuments = onboardingData?.documentUpload?.uploadedDocuments || [];
-  const numUploaded = uploadedDocuments.length;
-  const isDocumentUploadCompleted = onboardingData?.documentUpload?.status === "completed" || numUploaded === 4;
+  const uploadedCount = onboardingData?.documentUpload?.uploadedCount ?? uploadedDocuments.length;
+  const totalRequiredDocs = onboardingData?.documentUpload?.totalRequiredCount || 4;
+  const isDocumentUploadCompleted =
+    onboardingData?.documentUpload?.status === "completed" ||
+    (uploadedCount >= totalRequiredDocs && totalRequiredDocs > 0);
+  const documentProgress = isDocumentUploadCompleted
+    ? 100
+    : isRiskAssessmentCompleted
+      ? Math.round((uploadedCount / totalRequiredDocs) * 100)
+      : 0;
+  const documentSubtitle = isDocumentUploadCompleted
+    ? `${totalRequiredDocs} of ${totalRequiredDocs} steps completed`
+    : isRiskAssessmentCompleted
+      ? `${uploadedCount} of ${totalRequiredDocs} steps completed`
+      : "0 of 4 steps completed";
 
-  const isAppointmentBooked = onboardingData?.booking?.status === "completed";
-  const progress = isCompleted ? 100 : Math.round(((maxUnlockedStep - 1) / 4) * 100);
-  const subtitle = isCompleted ? "Completed" : `${maxUnlockedStep - 1} of 4 steps completed`;
+  // Step 4: Appointment Booking
+  const isAppointmentBooked =
+    onboardingData?.appointmentBooking?.status === "completed" ||
+    onboardingData?.booking?.status === "completed";
+  const appointmentProgress = isAppointmentBooked ? 100 : 0;
+  const appointmentSubtitle = isAppointmentBooked
+    ? "Your Session has been booked"
+    : isDocumentUploadCompleted
+      ? "Start Book Appointment"
+      : "0 of 4 steps completed";
 
-  if ( isLoading) {
+  // Overall Percent
+  const overallPercent = onboardingData?.overallPercent ?? (
+    isAppointmentBooked
+      ? 100
+      : isDocumentUploadCompleted
+        ? 75
+        : isRiskAssessmentCompleted
+          ? 50
+          : isQuestionnaireCompleted
+            ? 25
+            : 0
+  );
+
+  if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-start w-full min-h-full py-10 px-4">
         <Skeleton className="w-full max-w-[701px] h-20 mb-8 rounded-full bg-white/10" />
@@ -43,10 +101,11 @@ function DashboardContent() {
     <div className="flex flex-col items-center justify-start w-full min-h-full py-10 px-4">
       {/* Stepper Navigation */}
       <Stepper 
-        isQuestionnaireCompleted={isCompleted} 
+        isQuestionnaireCompleted={isQuestionnaireCompleted} 
         isRiskAssessmentCompleted={isRiskAssessmentCompleted} 
         isDocumentUploadCompleted={isDocumentUploadCompleted}
         isAppointmentBooked={isAppointmentBooked}
+        overallPercent={overallPercent}
       />
 
       {/* Grid of Steps */}
@@ -55,47 +114,39 @@ function DashboardContent() {
         <StepCard
           stepNumber={1}
           title="Step 01: Questionnaire"
-          subtitle={isCompleted ? "4 of 4 steps completed" : `${maxUnlockedStep - 1} of 4 steps completed`}
-          progress={progress}
-          isFullyCompleted={isCompleted}
-          onClick={() => router.push(isCompleted ? "/dashboard/questionnaire/completed" : "/dashboard/questionnaire/start")}
+          subtitle={questionnaireSubtitle}
+          progress={questionnaireProgress}
+          isFullyCompleted={isQuestionnaireCompleted}
+          onClick={() => router.push(isQuestionnaireCompleted ? "/dashboard/questionnaire/completed" : "/dashboard/questionnaire/start")}
         />
         
         {/* Step 2 */}
         <StepCard
           stepNumber={2}
           title="Step 02: Risk Assessment"
-          subtitle={isRiskAssessmentCompleted ? "Start Risk Assessment" : "Start Risk Assessment"}
-          progress={isRiskAssessmentCompleted ? 100 : 0}
-          badge={isRiskAssessmentCompleted ? "completed" : "incomplete"}
+          subtitle={riskSubtitle}
+          progress={riskProgress}
+          badge={riskBadge}
           isFullyCompleted={isRiskAssessmentCompleted}
-          onClick={() => router.push("/dashboard/risk-assessment")}
+          onClick={() => isRiskAssessmentCompleted ? undefined : router.push("/dashboard/risk-assessment")}
         />
 
         {/* Step 3 */}
         <StepCard
           stepNumber={3}
           title="Step 03: Document Upload"
-          subtitle={
-            isDocumentUploadCompleted 
-              ? "4 of 4 steps completed" 
-              : (isRiskAssessmentCompleted && numUploaded > 0)
-                ? `${numUploaded} of 4 steps completed`
-                : isRiskAssessmentCompleted 
-                  ? "Start Document Upload" 
-                  : "0 of 4 steps completed"
-          }
-          progress={isRiskAssessmentCompleted ? Math.round((numUploaded / 4) * 100) : 0}
+          subtitle={documentSubtitle}
+          progress={documentProgress}
           isFullyCompleted={isDocumentUploadCompleted}
-          onClick={() => router.push("/dashboard/document-upload")}
+          onClick={() => isRiskAssessmentCompleted ? router.push("/dashboard/document-upload") : undefined}
         />
 
         {/* Step 4 */}
         <StepCard
           stepNumber={4}
           title="Step 04: Appointment Booking"
-          subtitle={isAppointmentBooked ? "Your Session has been booked" : isDocumentUploadCompleted ? "Start Book Appointment" : "0 of 4 steps completed"}
-          progress={isAppointmentBooked ? 100 : 0}
+          subtitle={appointmentSubtitle}
+          progress={appointmentProgress}
           badge={isAppointmentBooked ? "button" : (isDocumentUploadCompleted ? undefined : "incomplete")}
           buttonText="View Details"
           isFullyCompleted={isAppointmentBooked}

@@ -6,17 +6,26 @@ interface StepperProps {
   isRiskAssessmentCompleted?: boolean;
   isDocumentUploadCompleted?: boolean;
   isAppointmentBooked?: boolean;
+  overallPercent?: number;
 }
 
-export const Stepper = ({ isQuestionnaireCompleted = false, isRiskAssessmentCompleted = false, isDocumentUploadCompleted = false, isAppointmentBooked = false }: StepperProps) => {
+export const Stepper = ({
+  isQuestionnaireCompleted = false,
+  isRiskAssessmentCompleted = false,
+  isDocumentUploadCompleted = false,
+  isAppointmentBooked = false,
+  overallPercent,
+}: StepperProps) => {
   // Determine active step based on completion statuses.
   let activeStepId = 1;
-  let progressPercentage = "0%";
+  let calculatedPercent = "0%";
 
-  if (isQuestionnaireCompleted) { activeStepId = 2; progressPercentage = "25%"; }
-  if (isRiskAssessmentCompleted) { activeStepId = 3; progressPercentage = "50%"; }
-  if (isDocumentUploadCompleted) { activeStepId = 4; progressPercentage = "75%"; }
-  if (isAppointmentBooked) { activeStepId = 5; progressPercentage = "100%"; }
+  if (isQuestionnaireCompleted) { activeStepId = 2; calculatedPercent = "25%"; }
+  if (isRiskAssessmentCompleted) { activeStepId = 3; calculatedPercent = "50%"; }
+  if (isDocumentUploadCompleted) { activeStepId = 4; calculatedPercent = "75%"; }
+  if (isAppointmentBooked) { activeStepId = 5; calculatedPercent = "100%"; }
+
+  const displayPercent = overallPercent !== undefined ? `${overallPercent}%` : calculatedPercent;
 
   const steps = [
     { id: 1, label: "Questionnaire", left: 99 },
@@ -37,7 +46,7 @@ export const Stepper = ({ isQuestionnaireCompleted = false, isRiskAssessmentComp
       {/* Progress Pill */}
       <div className="absolute top-[7px] right-[0px] w-[48px] h-[25.22px] bg-white/12 rounded-[76px] flex items-center justify-center">
         <span className="font-semibold text-[14px] leading-[21px] text-white tracking-[-0.01em]">
-          {progressPercentage}
+          {displayPercent}
         </span>
       </div>
 

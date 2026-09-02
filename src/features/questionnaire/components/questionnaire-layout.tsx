@@ -6,6 +6,8 @@ import { ReactNode, useEffect, useState } from "react";
 import { motion, AnimatePresence, useMotionValue, useTransform, animate } from "framer-motion";
 import { useProgressStore } from "../store/progress.store";
 
+import { useOnboardingProgress } from "@/features/onboarding/api/onboarding.queries";
+
 interface QuestionnaireLayoutProps {
   children: ReactNode;
   currentStep: number;
@@ -18,11 +20,31 @@ export const QuestionnaireLayout = ({
   totalSteps = 4,
 }: QuestionnaireLayoutProps) => {
   const router = useRouter();
-  const maxUnlockedStep = useProgressStore((state) => state.maxUnlockedStep);
-  const isLocked = currentStep > maxUnlockedStep;
+  const { data: progressResponse } = useOnboardingProgress();
+  const rawData: any = progressResponse?.data;
+  const onboardingData = rawData?.onboarding || rawData;
+  const questionnaire = onboardingData?.questionnaire;
+
+  const rawCompleted = questionnaire?.completedSubsteps;
+  const serverCompletedSubsteps: number[] = Array.isArray(rawCompleted)
+    ? rawCompleted.filter((n: any) => typeof n === "number" && n > 0)
+    : typeof rawCompleted === "number" && rawCompleted > 0
+      ? Array.from({ length: rawCompleted }, (_, i) => i + 1)
+      : [];
+  const isServerComplete = questionnaire?.status === "completed";
+  const serverUnlockedStep = isServerComplete
+    ? totalSteps + 1
+    : serverCompletedSubsteps.length > 0
+      ? Math.max(...serverCompletedSubsteps) + 1
+      : typeof questionnaire?.currentSubstep === "number" && questionnaire.currentSubstep > 0
+        ? questionnaire.currentSubstep
+        : 1;
+  const storeUnlockedStep = useProgressStore((state) => state.maxUnlockedStep);
+  const effectiveUnlockedStep = Math.max(serverUnlockedStep, storeUnlockedStep);
+  const isLocked = currentStep > effectiveUnlockedStep;
 
   // We only show progress up to what is unlocked
-  const displayStep = isLocked ? maxUnlockedStep + 1 : currentStep;
+  const displayStep = isLocked ? effectiveUnlockedStep + 1 : currentStep;
   const progressPercent = Math.round(((displayStep - 1) / totalSteps) * 100);
   
   const count = useMotionValue(progressPercent);

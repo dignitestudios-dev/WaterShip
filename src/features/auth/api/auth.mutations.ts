@@ -20,7 +20,7 @@ import {
 } from "../types/auth.types";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { setCookie, removeCookie } from "@/lib/cookie";
+import { setCookie, removeCookie, clearAuthSession } from "@/lib/cookie";
 import { getApiErrorMessage } from "@/lib/api-response";
 
 export const useAuthenticate = () => {
@@ -29,6 +29,7 @@ export const useAuthenticate = () => {
     onSuccess: (data) => {
       // Social login returns token directly
       if (data.data?.token) {
+        clearAuthSession();
         setCookie("token", data.data.token);
       }
       toast.success(data.message || "Authentication successful");
@@ -47,10 +48,11 @@ export const useVerifyOtp = () => {
     mutationFn: verifyOtp,
     onSuccess: (data) => {
       if (data.data?.token) {
+        clearAuthSession();
         setCookie("token", data.data.token);
       }
       toast.success(data.message || "OTP Verified Successfully");
-      router.push("/dashboard");
+      // router.push("/dashboard");
     },
     onError: (error: any) => {
       const message = getApiErrorMessage(error, "Invalid or expired OTP");
@@ -111,13 +113,15 @@ export const useDeleteAccount = () => {
   return useMutation({
     mutationFn: deleteAccount,
     onSuccess: (data) => {
-      removeCookie("token");
+      clearAuthSession();
       toast.success(data.message || "Account deleted successfully");
       router.push("/login");
     },
     onError: (error: any) => {
+      clearAuthSession();
       const message = getApiErrorMessage(error, "Failed to delete account");
       toast.error(message);
+      router.push("/login");
     },
   });
 };
@@ -128,12 +132,12 @@ export const useLogout = () => {
   return useMutation({
     mutationFn: logout,
     onSuccess: () => {
-      removeCookie("token");
+      clearAuthSession();
       toast.success("Logged out successfully");
       router.push("/login");
     },
     onError: (error: any) => {
-      removeCookie("token"); // clear token anyway if backend fails
+      clearAuthSession(); // clear session anyway if backend fails
       const message = getApiErrorMessage(error, "Logged out");
       toast.error(message);
       router.push("/login");

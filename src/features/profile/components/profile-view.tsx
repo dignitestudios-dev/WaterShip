@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, HelpCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
-import { removeCookie, getCookie } from "@/lib/cookie";
+import { removeCookie, getCookie, clearAuthSession } from "@/lib/cookie";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useGetMe } from "@/features/users/api/users.queries";
 import Image from "next/image";
@@ -40,9 +40,7 @@ export const ProfileView = () => {
   if (!mounted) return null;
 
   const handleLogout = () => {
-    // Clear the token cookie
-    removeCookie("token");
-    // Redirect to login page
+    clearAuthSession();
     router.push("/login");
   };
 

@@ -4,29 +4,58 @@ import { useRouter } from "next/navigation";
 import { HelpCircle, ChevronLeft } from "lucide-react";
 import { useProgressStore } from "../store/progress.store";
 import { useState, useEffect } from "react";
+import { useOnboardingProgress } from "@/features/onboarding/api/onboarding.queries";
 
 export const QuestionnaireIntro = () => {
   const router = useRouter();
-  
+
   // Hydration fix
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
-  
-  const maxUnlockedStep = useProgressStore((state) => state.maxUnlockedStep);
-  const isCompleted = useProgressStore((state) => state.isCompleted);
 
+  const { data: progressResponse } = useOnboardingProgress();
+  const rawData: any = progressResponse?.data;
+  const onboardingData = rawData?.onboarding || rawData;
+  const questionnaire = onboardingData?.questionnaire;
+
+  const rawCompleted = questionnaire?.completedSubsteps;
+  const serverCompletedSubsteps: number[] = Array.isArray(rawCompleted)
+    ? rawCompleted.filter((n: any) => typeof n === "number" && n > 0)
+    : typeof rawCompleted === "number" && rawCompleted > 0
+      ? Array.from({ length: rawCompleted }, (_, i) => i + 1)
+      : [];
+
+  const completedCount = serverCompletedSubsteps.length;
+  const isServerComplete = questionnaire?.status === "completed";
+  const currentSubstep =
+    typeof questionnaire?.currentSubstep === "number" && questionnaire.currentSubstep > 0
+      ? questionnaire.currentSubstep
+      : 1;
+
+  const hasAnswers = Array.isArray(questionnaire?.answers) && questionnaire.answers.length > 0;
+
+  // A questionnaire is resumable only if there is genuine progress on the account
+  const isResume =
+    !isServerComplete &&
+    (completedCount > 0 || currentSubstep > 1 || hasAnswers);
+
+  const startStepNumber = isServerComplete
+    ? 5
+    : completedCount > 0
+      ? Math.max(...serverCompletedSubsteps) + 1
+      : currentSubstep > 1
+        ? currentSubstep
+        : 1;
   const handleStart = () => {
-    if (isCompleted) {
+    if (isServerComplete) {
       router.push("/dashboard/questionnaire/completed");
       return;
     }
-    
-    switch (maxUnlockedStep) {
-      case 1: router.push("/dashboard/questionnaire/form"); break;
-      case 2: router.push("/dashboard/questionnaire/step-2"); break;
-      case 3: router.push("/dashboard/questionnaire/step-3"); break;
-      case 4: router.push("/dashboard/questionnaire/step-4"); break;
-      default: router.push("/dashboard/questionnaire/form");
+
+    if (isResume && startStepNumber > 1) {
+      router.push(`/dashboard/questionnaire/form?step=${startStepNumber}`);
+    } else {
+      router.push("/dashboard/questionnaire/form?step=1");
     }
   };
 
@@ -36,10 +65,9 @@ export const QuestionnaireIntro = () => {
 
   return (
     <div className="w-full min-h-screen relative overflow-hidden flex items-center justify-center bg-gradient-to-b from-[#034593] to-[#01152D]">
-      
       {/* Back Button */}
-      <button 
-        onClick={() => router.back()} 
+      <button
+        onClick={() => router.back()}
         className="absolute top-8 left-8 md:top-44 md:left-44 w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition z-50"
       >
         <ChevronLeft className="w-5 h-5 text-white" strokeWidth={2.5} />
@@ -54,7 +82,6 @@ export const QuestionnaireIntro = () => {
 
       {/* Main Content Box */}
       <div className="flex flex-col items-center justify-between w-[343px] h-[296px] relative z-10">
-        
         {/* Icon Circle */}
         <div className="w-[79px] h-[79px] bg-white/15 rounded-full flex items-center justify-center shadow-sm">
           <HelpCircle className="w-[30px] h-[30px] text-white" strokeWidth={2.5} />
@@ -63,11 +90,11 @@ export const QuestionnaireIntro = () => {
         {/* Text Area */}
         <div className="flex flex-col items-center gap-[25px] w-[313px]">
           <h2 className="text-white font-semibold text-[26px] leading-[39px] tracking-[-0.025em] text-center">
-            {maxUnlockedStep > 1 ? "Resume Your Questionnaire" : "Start Your Questionnaire"}
+            {isResume ? "Resume Your Questionnaire" : "Start Your Questionnaire"}
           </h2>
           <p className="text-[#E0E0E0] font-normal text-[14px] leading-[21px] text-center">
-            {maxUnlockedStep > 1 
-              ? "Pick up where you left off to help us understand your financial profile." 
+            {isResume
+              ? "Pick up where you left off to help us understand your financial profile."
               : "Complete a few simple steps to help us understand your financial profile and guide your onboarding."}
           </p>
         </div>
@@ -78,10 +105,9 @@ export const QuestionnaireIntro = () => {
           className="w-[343px] h-[42px] bg-gradient-to-r from-[#2186FF] to-[#145199] rounded-[72px] flex items-center justify-center transition-opacity hover:opacity-90"
         >
           <span className="text-white font-medium text-[14px] leading-[21px] text-center">
-            {maxUnlockedStep > 1 ? "Resume Now" : "Start Now"}
+            {isResume ? "Resume Now" : "Start Now"}
           </span>
         </button>
-
       </div>
     </div>
   );

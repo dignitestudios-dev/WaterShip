@@ -3,7 +3,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { QuestionnaireQuestion } from "@/features/onboarding/types/onboarding.types";
+import { QuestionnaireQuestion, QuestionnaireOption } from "@/features/onboarding/types/onboarding.types";
 import { format } from "date-fns";
 import { CalendarIcon, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -44,117 +44,245 @@ interface DynamicFormRendererProps {
   questions: QuestionnaireQuestion[];
   onComplete: (data: any) => void;
   onSaveDraft: (data: any) => void;
+  isSubmitting?: boolean;
 }
 
-export const DynamicFormRenderer = ({ questions, onComplete, onSaveDraft }: DynamicFormRendererProps) => {
+const normalizeOptions = (options?: (string | QuestionnaireOption)[]): QuestionnaireOption[] => {
+  if (!options || !Array.isArray(options)) return [];
+  return options.map((opt) => (typeof opt === "string" ? { label: opt, value: opt } : opt));
+};
+
+export const DynamicFormRenderer = ({ questions, onComplete, onSaveDraft, isSubmitting }: DynamicFormRendererProps) => {
   const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
 
-  // Dynamically build Zod schema
+  // Dynamically build Zod schema that correctly validates conditional questions only when active
   const generateSchema = (qs: QuestionnaireQuestion[]) => {
-    const schemaObj: Record<string, z.ZodTypeAny> = {};
-    
-    const addQuestionToSchema = (q: QuestionnaireQuestion) => {
-      let fieldSchema: z.ZodTypeAny = z.any();
+    return z.record(z.string(), z.any()).superRefine((data, ctx) => {
+      const validateQuestion = (q: QuestionnaireQuestion) => {
+        const val = data[q.questionId];
 
-      if (q.questionType === "text" || q.questionType === "radio" || q.questionType === "select" || q.questionType === "dropdown") {
-        let strSchema = z.string().trim();
-        fieldSchema = q.required ? strSchema.min(1, "This field is required") : strSchema.optional();
-      } else if (q.questionType === "number") {
-        let numSchema = z.string().trim();
-        fieldSchema = q.required ? numSchema.min(1, "This field is required") : numSchema.optional();
-      } else if (q.questionType === "date") {
-        let dateSchema = z.date();
-        fieldSchema = q.required ? dateSchema : dateSchema.optional();
-      } else if (q.questionType === "checkbox") {
-        let boolSchema = z.boolean();
-        fieldSchema = q.required ? boolSchema.refine((val: boolean) => val === true, "Must be checked") : boolSchema.optional();
-      }
-      
-      schemaObj[q.questionId] = fieldSchema;
+        if (q.required) {
+          if (q.type === "checkbox") {
+            if (val !== true) {
+              ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Must be checked",
+                path: [q.questionId],
+              });
+            }
+          } else if (q.type === "date") {
+            if (!val) {
+              ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "This field is required",
+                path: [q.questionId],
+              });
+            }
+          } else {
+            if (val === undefined || val === null || String(val).trim() === "") {
+              ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "This field is required",
+                path: [q.questionId],
+              });
+            }
+          }
+        }
 
-      if (q.conditionalLogic) {
-        q.conditionalLogic.forEach(cond => {
-          cond.questions.forEach(addQuestionToSchema);
-        });
-      }
-    };
+        // Check and validate conditional questions if active
+        if (q.conditionalLogic && Array.isArray(q.conditionalLogic)) {
+          q.conditionalLogic.forEach((cond) => {
+            const triggerVal = cond.triggerValue ?? cond.dependsOnValue;
+            const isTriggerMatch =
+              val !== undefined &&
+              val !== null &&
+              val !== "" &&
+              triggerVal !== undefined &&
+              triggerVal !== null &&
+              String(triggerVal).trim().toLowerCase() === String(val).trim().toLowerCase();
 
-    qs.forEach(addQuestionToSchema);
-    return z.object(schemaObj);
+            if (isTriggerMatch && cond.questions && Array.isArray(cond.questions)) {
+              cond.questions.forEach(validateQuestion);
+            }
+          });
+        }
+      };
+
+      qs.forEach(validateQuestion);
+    });
   };
 
   const dynamicSchema = generateSchema(questions);
 
   const form = useForm<Record<string, any>>({
     resolver: zodResolver(dynamicSchema),
-    defaultValues: {}, 
+    defaultValues: {},
     reValidateMode: "onChange",
   });
 
+  // Recursively collect all visible questions in natural sequential order
+  const getVisibleQuestions = (qs: QuestionnaireQuestion[]): QuestionnaireQuestion[] => {
+    const list: QuestionnaireQuestion[] = [];
+
+    const collect = (q: QuestionnaireQuestion) => {
+      list.push(q);
+
+      const val = form.watch(q.questionId);
+      if (q.conditionalLogic && val !== undefined && val !== null && val !== "") {
+        const activeConditions = q.conditionalLogic.filter((cond) => {
+          const triggerVal = cond.triggerValue ?? cond.dependsOnValue;
+          if (triggerVal === undefined || triggerVal === null) return false;
+          return String(triggerVal).trim().toLowerCase() === String(val).trim().toLowerCase();
+        });
+
+        activeConditions.forEach((cond) => {
+          if (cond.questions && Array.isArray(cond.questions)) {
+            cond.questions.forEach(collect);
+          }
+        });
+      }
+    };
+
+    qs.forEach(collect);
+    return list;
+  };
+
+  const visibleQuestions = getVisibleQuestions(questions);
+
+  const getFilteredValues = (rawValues: Record<string, any>) => {
+    const visibleIds = new Set(visibleQuestions.map((q) => q.questionId));
+    const filtered: Record<string, any> = {};
+    for (const key of Object.keys(rawValues)) {
+      if (visibleIds.has(key) && rawValues[key] !== undefined && rawValues[key] !== null && rawValues[key] !== "") {
+        filtered[key] = rawValues[key];
+      }
+    }
+    return filtered;
+  };
+
   const onSubmit = (data: any) => {
-    onComplete(data);
+    onComplete(getFilteredValues(data));
   };
 
   const handleSaveDraft = () => {
-    onSaveDraft(form.getValues());
+    onSaveDraft(getFilteredValues(form.getValues()));
   };
 
   const renderField = (q: QuestionnaireQuestion) => {
-    const value = form.watch(q.questionId);
-    
-    // Check conditional logic rendering
-    let activeConditionalQuestions: QuestionnaireQuestion[] = [];
-    if (q.conditionalLogic) {
-      const activeCondition = q.conditionalLogic.find(cond => String(cond.dependsOnValue) === String(value));
-      if (activeCondition) {
-        activeConditionalQuestions = activeCondition.questions;
-      }
-    }
+    const options = normalizeOptions(q.options);
 
     return (
-      <div key={q.questionId} className="flex flex-col gap-[30px]">
+      <div
+        key={q.questionId}
+        className="flex flex-col gap-[8px] w-full animate-in fade-in zoom-in-95 duration-200"
+      >
         <FormField
           control={form.control}
           name={q.questionId}
           render={({ field }) => (
-            <FormItem className={q.questionType === "checkbox" ? "flex flex-row items-center justify-start space-x-3 space-y-0" : "flex flex-col"}>
-              {q.questionType !== "checkbox" && (
-                <FormLabel className="text-white font-medium text-[16px] leading-[24px] min-h-[56px] flex items-end pb-[5px]">
-                  {q.text}{q.required && <span className="text-[#D11D21]">*</span>}
+            <FormItem
+              className={
+                q.type === "checkbox"
+                  ? "flex flex-row items-center justify-start space-x-3 space-y-0 pt-6"
+                  : "flex flex-col"
+              }
+            >
+              {q.type !== "checkbox" && (
+                <FormLabel className="text-white font-medium text-[16px] leading-[22px] min-h-[44px] flex items-end pb-[6px]">
+                  <span>{q.text}</span>
+                  {q.required && <span className="text-[#D11D21] ml-1">*</span>}
                 </FormLabel>
               )}
-              
+
               {/* Text / Number Input */}
-              {(q.questionType === "text" || q.questionType === "number") && (
+              {(q.type === "text" || q.type === "number") && (
                 <FormControl>
-                  <Input 
-                    type={q.questionType === "number" ? "number" : "text"}
-                    placeholder="Enter answer" 
-                    {...field} 
+                  <Input
+                    type={q.type === "number" ? "number" : "text"}
+                    placeholder={q.hintText || "Enter answer"}
+                    {...field}
                     value={typeof field.value === "string" || typeof field.value === "number" ? field.value : ""}
-                    className="bg-white/15 border-none rounded-[7px] text-white placeholder:text-white/50 h-[40px]!" 
+                    className="bg-white/15 border-none rounded-[7px] text-white placeholder:text-white/50 h-[40px]! w-full"
                   />
                 </FormControl>
               )}
 
-              {/* Select / Dropdown / Radio (Map all to select for now) */}
-              {(q.questionType === "select" || q.questionType === "dropdown" || q.questionType === "radio") && (
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+              {/* Radio Group / Pills */}
+              {q.type === "radio" && (
+                <FormControl>
+                  <div className="flex flex-wrap items-center gap-[10px]">
+                    {options.map((opt, i) => {
+                      const isSelected = String(field.value ?? "").toLowerCase() === String(opt.value).toLowerCase();
+                      return (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => field.onChange(opt.value)}
+                          className={cn(
+                            "h-[40px] px-5 rounded-[7px] text-[14px] font-medium transition-all flex items-center justify-center cursor-pointer border",
+                            isSelected
+                              ? "bg-[#2186FF] text-white border-[#2186FF] shadow-[0px_0px_15px_rgba(33,134,255,0.4)]"
+                              : "bg-white/15 text-white border-transparent hover:bg-white/20"
+                          )}
+                        >
+                          {opt.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </FormControl>
+              )}
+
+              {/* Chips / Multi-choice Pills */}
+              {q.type === "chips" && (
+                <FormControl>
+                  <div className="flex flex-wrap items-center gap-[10px]">
+                    {options.map((opt, i) => {
+                      const isSelected = String(field.value ?? "").toLowerCase() === String(opt.value).toLowerCase();
+                      return (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => field.onChange(opt.value)}
+                          className={cn(
+                            "h-[36px] px-4 rounded-[20px] text-[13px] font-medium transition-all flex items-center justify-center cursor-pointer border",
+                            isSelected
+                              ? "bg-[#2186FF] text-white border-[#2186FF] shadow-[0px_0px_15px_rgba(33,134,255,0.4)]"
+                              : "bg-white/15 text-white border-transparent hover:bg-white/20"
+                          )}
+                        >
+                          {opt.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </FormControl>
+              )}
+
+              {/* Select / Dropdown */}
+              {(q.type === "select" || q.type === "dropdown") && (
+                <Select onValueChange={field.onChange} value={field.value || ""}>
                   <FormControl>
-                    <SelectTrigger className="bg-white/15 border-none rounded-[7px] text-white h-[40px]!">
-                      <SelectValue placeholder="Select" />
+                    <SelectTrigger className="bg-white/15 border-none rounded-[7px] text-white h-[40px]! w-full [&_svg]:text-white">
+                      <SelectValue placeholder={q.hintText || "Select"} className="text-white" />
                     </SelectTrigger>
                   </FormControl>
-                  <SelectContent>
-                    {q.options?.map((opt, i) => (
-                      <SelectItem key={i} value={opt.value}>{opt.label}</SelectItem>
+                  <SelectContent className="bg-[#034593] text-white border border-white/20 max-h-[250px] shadow-xl">
+                    {options.map((opt, i) => (
+                      <SelectItem
+                        key={i}
+                        value={opt.value}
+                        className="text-white focus:bg-white/20 focus:text-white cursor-pointer"
+                      >
+                        {opt.label}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               )}
 
               {/* Date */}
-              {q.questionType === "date" && (
+              {q.type === "date" && (
                 <Popover>
                   <PopoverTrigger>
                     <Button
@@ -165,14 +293,18 @@ export const DynamicFormRenderer = ({ questions, onComplete, onSaveDraft }: Dyna
                         !field.value ? "text-[#E0E0E0]" : "text-white"
                       )}
                     >
-                      {field.value instanceof Date || typeof field.value === "string" ? format(new Date(field.value), "d MMMM yyyy") : <span>Pick a date</span>}
+                      {field.value instanceof Date || typeof field.value === "string" ? (
+                        format(new Date(field.value), "d MMMM yyyy")
+                      ) : (
+                        <span>{q.hintText || "Pick a date"}</span>
+                      )}
                       <CalendarIcon className="ml-auto h-4 w-4 opacity-50 text-[#E0E0E0]" />
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
                     <Calendar
                       mode="single"
-                      selected={field.value instanceof Date ? field.value : undefined}
+                      selected={field.value ? new Date(field.value) : undefined}
                       onSelect={(date) => field.onChange(date)}
                       disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
                     />
@@ -181,7 +313,7 @@ export const DynamicFormRenderer = ({ questions, onComplete, onSaveDraft }: Dyna
               )}
 
               {/* Checkbox */}
-              {q.questionType === "checkbox" && (
+              {q.type === "checkbox" && (
                 <>
                   <FormControl>
                     <Checkbox
@@ -190,8 +322,9 @@ export const DynamicFormRenderer = ({ questions, onComplete, onSaveDraft }: Dyna
                       className="bg-transparent border-white/30 data-checked:!bg-[#2186FF] data-checked:!border-[#2186FF] data-checked:text-white rounded-[4px]"
                     />
                   </FormControl>
-                  <FormLabel className="text-[#E0E0E0] font-medium text-[14px] leading-[21px]">
+                  <FormLabel className="text-[#E0E0E0] font-medium text-[14px] leading-[21px] cursor-pointer">
                     {q.text}
+                    {q.required && <span className="text-[#D11D21] ml-1">*</span>}
                   </FormLabel>
                 </>
               )}
@@ -200,13 +333,6 @@ export const DynamicFormRenderer = ({ questions, onComplete, onSaveDraft }: Dyna
             </FormItem>
           )}
         />
-        
-        {/* Render active conditional questions */}
-        {activeConditionalQuestions.length > 0 && (
-          <div className="pl-4 border-l-2 border-white/20 ml-2 mt-2 flex flex-col gap-[30px]">
-            {activeConditionalQuestions.map(renderField)}
-          </div>
-        )}
       </div>
     );
   };
@@ -216,7 +342,7 @@ export const DynamicFormRenderer = ({ questions, onComplete, onSaveDraft }: Dyna
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="w-full flex flex-col gap-[30px]">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-x-[30px] gap-y-[30px] w-full">
-            {questions.map(renderField)}
+            {visibleQuestions.map(renderField)}
           </div>
 
           {/* Bottom Actions */}
@@ -264,9 +390,10 @@ export const DynamicFormRenderer = ({ questions, onComplete, onSaveDraft }: Dyna
 
               <Button
                 type="submit"
-                className="w-[167px] h-[42px] rounded-[96px] bg-gradient-to-br from-[#2186FF] to-[rgba(33,134,255,0.15)] text-[#DDEBF8] hover:opacity-90 font-bold text-[14px] border-none"
+                disabled={isSubmitting}
+                className="w-[167px] h-[42px] rounded-[96px] bg-gradient-to-br from-[#2186FF] to-[rgba(33,134,255,0.15)] text-[#DDEBF8] hover:opacity-90 font-bold text-[14px] border-none disabled:opacity-50"
               >
-                Continue
+                {isSubmitting ? "Submitting..." : "Continue"}
               </Button>
             </div>
           </div>

@@ -7,6 +7,7 @@ import {
   getQuestions, 
   getDocumentRequirements, 
   getBookingAvailability,
+  getAppointmentSlotsByDate,
   saveQuestionnaireDraft,
   completeQuestionnaireStep,
   completeRiskAssessment,
@@ -14,6 +15,7 @@ import {
   completeDocumentUpload,
   bookAppointment
 } from "./onboarding.api";
+import { RiskAssessmentPayload } from "../types/onboarding.types";
 import { getApiErrorMessage } from "@/lib/api-response";
 
 export const useOnboardingProgress = () => {
@@ -41,6 +43,14 @@ export const useBookingAvailability = (date?: string) => {
   return useQuery({
     queryKey: ["onboarding", "booking-availability", date],
     queryFn: () => getBookingAvailability(date),
+  });
+};
+
+export const useAppointmentSlotsByDate = (date?: string) => {
+  return useQuery({
+    queryKey: ["appointment", "slots-by-date", date],
+    queryFn: () => getAppointmentSlotsByDate(date!),
+    enabled: !!date,
   });
 };
 
@@ -80,12 +90,13 @@ export const useCompleteRiskAssessment = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: completeRiskAssessment,
+    mutationFn: (payload?: RiskAssessmentPayload) => completeRiskAssessment(payload || {}),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["onboarding", "progress"] });
       toast.success(data.message || "Risk assessment completed");
-      if (data.data?.redirectUrl) {
-        window.location.href = data.data.redirectUrl;
+      const redirectUrl = data.data?.redirectUrl || (data as any)?.redirectUrl;
+      if (redirectUrl) {
+        window.open(redirectUrl, "_blank");
       }
     },
     onError: (error: any) => {

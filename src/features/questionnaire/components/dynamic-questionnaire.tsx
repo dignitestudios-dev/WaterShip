@@ -8,6 +8,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { QuestionnaireSubstep, QuestionnaireAnswer } from "@/features/onboarding/types/onboarding.types";
 import { Suspense } from "react";
 
+import { useProgressStore } from "../store/progress.store";
+
 const DynamicQuestionnaireContent = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -23,7 +25,7 @@ const DynamicQuestionnaireContent = () => {
   const substeps: QuestionnaireSubstep[] = questionsResponse?.data || [];
   const maxStep = substeps.length;
   const currentStep = stepParam ? parseInt(stepParam, 10) : 1;
-  const activeSubstep = substeps.find(s => s.substepNumber === currentStep) || substeps[0];
+  const activeSubstep = substeps.find(s => (s.stepNumber ?? s.substepNumber) === currentStep) || substeps[0];
 
   const formatAnswers = (data: any): QuestionnaireAnswer[] => {
     return Object.keys(data).map(key => ({
@@ -32,13 +34,16 @@ const DynamicQuestionnaireContent = () => {
     }));
   };
 
+  const currentStepNumber = activeSubstep?.stepNumber ?? activeSubstep?.substepNumber ?? currentStep;
+
   const handleComplete = (data: any) => {
     if (!activeSubstep) return;
     completeMutation.mutate({
-      substepNumber: activeSubstep.substepNumber,
+      substepNumber: currentStepNumber,
       answers: formatAnswers(data),
     }, {
       onSuccess: () => {
+        useProgressStore.getState().unlockStep(currentStep + 1);
         if (currentStep < maxStep) {
           router.push(`/dashboard/questionnaire/form?step=${currentStep + 1}`);
         } else {
@@ -50,8 +55,20 @@ const DynamicQuestionnaireContent = () => {
 
   const handleSaveDraft = (data: any) => {
     if (!activeSubstep) return;
+    const rawCompleted = progressResponse?.data?.questionnaire?.completedSubsteps;
+    const completedList: number[] = Array.isArray(rawCompleted)
+      ? rawCompleted
+      : typeof rawCompleted === "number"
+        ? [rawCompleted]
+        : [];
+    const lastCompleted = completedList.length > 0 
+      ? Math.max(...completedList) 
+      : Math.max(0, currentStepNumber - 1);
+
     draftMutation.mutate({
-      substepNumber: activeSubstep.substepNumber,
+      substepNumber: currentStepNumber,
+      currentSubstep: currentStepNumber,
+      completedSubstepNumber: lastCompleted,
       answers: formatAnswers(data),
     }, {
       onSuccess: () => {
@@ -84,12 +101,14 @@ const DynamicQuestionnaireContent = () => {
   return (
     <QuestionnaireLayout currentStep={currentStep} totalSteps={maxStep}>
       <div className="mt-[50px] text-[#FFFFFF] font-medium text-[14px] leading-[21px] tracking-[-0.01em] uppercase z-10">
-        {activeSubstep.title}
+        {activeSubstep.stepName || activeSubstep.title}
       </div>
       <DynamicFormRenderer 
+        key={currentStepNumber}
         questions={activeSubstep.questions} 
         onComplete={handleComplete} 
         onSaveDraft={handleSaveDraft}
+        isSubmitting={completeMutation.isPending}
       />
     </QuestionnaireLayout>
   );

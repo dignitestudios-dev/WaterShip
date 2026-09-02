@@ -6,6 +6,7 @@ import { useProgressStore } from "@/features/questionnaire/store/progress.store"
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { useOnboardingProgress, useCompleteRiskAssessment } from "@/features/onboarding/api/onboarding.queries";
 
 export default function RiskAssessmentPage() {
   const router = useRouter();
@@ -14,25 +15,46 @@ export default function RiskAssessmentPage() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   
-  const isQuestionnaireCompleted = useProgressStore((state) => state.isCompleted);
+  const { data: progressResponse } = useOnboardingProgress();
+  const completeMutation = useCompleteRiskAssessment();
+  const rawData: any = progressResponse?.data;
+  const onboardingData = rawData?.onboarding || rawData;
+  
+  const isQuestionnaireCompleted = 
+    onboardingData?.questionnaire?.status === "completed" || 
+    useProgressStore((state) => state.isCompleted);
+  const isRiskAssessmentCompleted = 
+    onboardingData?.riskAssessment?.status === "completed" || 
+    useProgressStore((state) => state.isRiskAssessmentCompleted);
   const isLocked = !isQuestionnaireCompleted;
   const setRiskAssessmentCompleted = useProgressStore((state) => state.setRiskAssessmentCompleted);
 
   const [submitState, setSubmitState] = useState<'idle' | 'confirm' | 'submitting' | 'success'>('idle');
 
-  if (!mounted) {
+  useEffect(() => {
+    if (mounted && isRiskAssessmentCompleted && submitState === 'idle') {
+      router.replace("/dashboard");
+    }
+  }, [mounted, isRiskAssessmentCompleted, router, submitState]);
+
+  if (!mounted || isRiskAssessmentCompleted) {
     return <div className="w-full min-h-screen bg-gradient-to-b from-[#034593] to-[#01152D]" />;
   }
 
   const handleSave = () => {
     setSubmitState('submitting');
-    setTimeout(() => {
-      setSubmitState('success');
-      setTimeout(() => {
+    completeMutation.mutate({}, {
+      onSuccess: () => {
         setRiskAssessmentCompleted(true);
-        router.push("/dashboard");
-      }, 1500);
-    }, 2000);
+        setSubmitState('success');
+        setTimeout(() => {
+          router.push("/dashboard");
+        }, 1500);
+      },
+      onError: () => {
+        setSubmitState('idle');
+      }
+    });
   };
 
   return (

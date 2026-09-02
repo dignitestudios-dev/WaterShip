@@ -3,10 +3,12 @@ import { ApiResponse } from "@/features/auth";
 import { 
   OnboardingStatus, 
   QuestionnairePayload, 
+  QuestionnaireDraftPayload,
   RiskAssessmentPayload, 
   DocumentUploadPayload,
   DocumentRequirement,
-  BookingPayload
+  BookingPayload,
+  AppointmentSlotsByDateResponse
 } from "../types/onboarding.types";
 
 export const getOnboardingProgress = async (): Promise<ApiResponse<OnboardingStatus>> => {
@@ -30,7 +32,13 @@ export const getBookingAvailability = async (date?: string): Promise<ApiResponse
   return data;
 };
 
-export const saveQuestionnaireDraft = async (payload: QuestionnairePayload): Promise<ApiResponse> => {
+export const getAppointmentSlotsByDate = async (date: string): Promise<ApiResponse<AppointmentSlotsByDateResponse>> => {
+  const query = date ? `?date=${date}` : "";
+  const { data } = await api.get<ApiResponse<AppointmentSlotsByDateResponse>>(`/appointment/slots-by-date${query}`);
+  return data;
+};
+
+export const saveQuestionnaireDraft = async (payload: QuestionnaireDraftPayload): Promise<ApiResponse> => {
   const { data } = await api.post<ApiResponse>("/onboarding/questionnaire/draft", payload);
   return data;
 };
@@ -40,7 +48,7 @@ export const completeQuestionnaireStep = async (payload: QuestionnairePayload): 
   return data;
 };
 
-export const completeRiskAssessment = async (payload: RiskAssessmentPayload): Promise<ApiResponse<{ redirectUrl?: string }>> => {
+export const completeRiskAssessment = async (payload: RiskAssessmentPayload = {}): Promise<ApiResponse<{ redirectUrl?: string }>> => {
   const { data } = await api.post<ApiResponse<{ redirectUrl?: string }>>("/onboarding/risk-assessment/complete", payload);
   return data;
 };
@@ -62,7 +70,8 @@ export const completeDocumentUpload = async (): Promise<ApiResponse> => {
   return data;
 };
 
-export const bookAppointment = async (payload: BookingPayload): Promise<ApiResponse> => {
-  const { data } = await api.post<ApiResponse>("/onboarding/book-appointment", payload);
+export const bookAppointment = async (payload: BookingPayload): Promise<ApiResponse<any>> => {
+  const { slotId, ...body } = payload;
+  const { data } = await api.post<ApiResponse<any>>(`/appointment/book/${slotId}`, body);
   return data;
 };

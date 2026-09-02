@@ -1,5 +1,5 @@
 import axios, { InternalAxiosRequestConfig, AxiosResponse, AxiosError } from "axios";
-import { getCookie, removeCookie } from "./cookie";
+import { getCookie, clearAuthSession } from "./cookie";
 
 export const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.dev.watership.app",
@@ -54,7 +54,7 @@ api.interceptors.response.use(
   },
   (error: AxiosError) => {
     if (error.response?.status === 401) {
-      removeCookie("token");
+      clearAuthSession();
       if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login") && !window.location.pathname.startsWith("/verify-email")) {
         window.location.href = "/login";
       }

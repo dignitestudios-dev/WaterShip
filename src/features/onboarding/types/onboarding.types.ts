@@ -1,20 +1,31 @@
 import { ApiResponse } from "@/features/auth";
 
 export interface OnboardingStatus {
-  status: "not_started" | "in_progress" | "completed";
-  overallPercent: number;
-  questionnaire: {
+  status?: "not_started" | "in_progress" | "completed";
+  overallPercent?: number;
+  questionnaire?: {
     status: string;
-    completedSubsteps: number[];
+    completedSubsteps?: number | number[];
+    currentSubstep?: number;
+    totalSubsteps?: number;
+    substepsProgress?: any[];
+    answers?: any[];
   };
-  riskAssessment: {
+  riskAssessment?: {
     status: string;
+    thirdPartyReference?: string | null;
   };
-  documentUpload: {
+  documentUpload?: {
     status: string;
-    uploadedDocuments: any[];
+    uploadedDocuments?: any[];
+    uploadedCount?: number;
+    totalRequiredCount?: number;
   };
-  booking: {
+  appointmentBooking?: {
+    status: string;
+    bookingDate?: string | null;
+  };
+  booking?: {
     status: string;
   };
 }
@@ -24,21 +35,30 @@ export interface QuestionnaireOption {
   value: string;
 }
 
+export interface QuestionnaireConditionalLogic {
+  triggerValue?: any;
+  dependsOnValue?: any;
+  questions: QuestionnaireQuestion[];
+}
+
 export interface QuestionnaireQuestion {
   questionId: string;
-  questionType: "text" | "date" | "radio" | "checkbox" | "select" | "dropdown" | "chips" | "number";
+  number?: number;
+  type: "text" | "date" | "radio" | "checkbox" | "select" | "dropdown" | "chips" | "number" | string;
   text: string;
   required: boolean;
-  options?: QuestionnaireOption[];
-  conditionalLogic?: {
-    dependsOnValue: any;
-    questions: QuestionnaireQuestion[];
-  }[];
+  options?: (string | QuestionnaireOption)[];
+  hintText?: string | null;
+  conditionalLogic?: QuestionnaireConditionalLogic[];
 }
 
 export interface QuestionnaireSubstep {
-  substepNumber: number;
-  title: string;
+  _id?: string;
+  stepNumber: number;
+  stepName?: string;
+  title?: string;
+  order?: number;
+  substepNumber?: number;
   description?: string;
   questions: QuestionnaireQuestion[];
 }
@@ -54,14 +74,27 @@ export interface QuestionnairePayload {
   answers: QuestionnaireAnswer[];
 }
 
+export interface QuestionnaireDraftPayload {
+  substepNumber: number;
+  currentSubstep: number;
+  completedSubstepNumber: number;
+  answers: QuestionnaireAnswer[];
+}
+
 export interface RiskAssessmentPayload {
   thirdPartyReference?: string;
 }
 
+export type DocumentCategory = 
+  | "tax_return"
+  | "investment_statements"
+  | "insurance_policies"
+  | "estate_trust_docs";
+
 export interface DocumentUploadPayload {
   file: File | Blob;
   fileName: string;
-  type: string;
+  type: DocumentCategory | string;
 }
 
 export interface DocumentRequirement {
@@ -70,11 +103,50 @@ export interface DocumentRequirement {
   required: boolean;
 }
 
-export interface BookingPayload {
-  bookingDate: string;
-  startTime: string; // HH:mm
-  endTime: string;   // HH:mm
+export interface BookAppointmentPayload {
+  slotId: string;
   meetingLocation?: string;
   isTeamsMeetingRequested?: boolean;
   notes?: string;
+}
+
+export type BookingPayload = BookAppointmentPayload;
+
+export interface AppointmentLocation {
+  id: string;
+  name: string;
+}
+
+export interface AppointmentSlotBookedBy {
+  _id?: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+}
+
+export interface AppointmentSlot {
+  _id: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  duration?: number;
+  status: "Available" | "Booked" | string;
+  bookedBy?: AppointmentSlotBookedBy | null;
+  bookedAt?: string | null;
+  meetingLocation?: string;
+  isTeamsMeetingRequested?: boolean;
+  notes?: string;
+  bookingStatus?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface AppointmentSlotsByDateResponse {
+  date: string;
+  locations: AppointmentLocation[];
+  totalSlots: number;
+  availableCount: number;
+  bookedCount: number;
+  slots: AppointmentSlot[];
 }

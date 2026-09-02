@@ -22,7 +22,7 @@ const verifySchema = z.object({
 
 type VerifyFormData = z.infer<typeof verifySchema>;
 
-export const VerifyEmailForm = () => {
+export const VerifyEmailForm :any = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get("email") || "";
@@ -58,11 +58,14 @@ export const VerifyEmailForm = () => {
     verifyMutation.mutate(
       { email, otp },
       {
-        onSuccess: () => {
+        onSuccess: (data) => {
           setStatus("success");
-          setTimeout(() => {
-            router.push("/complete-profile");
-          }, 2000);
+          if(data?.data?.user?.isProfileCompleted){
+            router.push("/dashboard");
+          }
+          else{
+              router.push("/complete-profile");
+          }
         },
         onError: () => {
           setStatus("idle");
