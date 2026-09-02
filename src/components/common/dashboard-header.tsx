@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { Bell } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -7,10 +8,14 @@ import { getCookie } from "@/lib/cookie";
 
 export const DashboardHeader = () => {
   const router = useRouter();
-  const hasToken = !!getCookie("token");
+  const [hasToken, setHasToken] = useState(false);
+
+  useEffect(() => {
+    setHasToken(!!getCookie("token"));
+  }, []);
 
   return (
-    <header suppressHydrationWarning className="w-full h-[115px] bg-gradient-to-r from-white from-60% to-[#E4F0FB] shadow-[0px_0px_30px_rgba(255,255,255,0.15)] flex items-center justify-between px-6 lg:px-[130px] z-50 relative">
+    <header className="w-full h-[115px] bg-gradient-to-r from-white from-60% to-[#E4F0FB] shadow-[0px_0px_30px_rgba(255,255,255,0.15)] flex items-center justify-between px-6 lg:px-[130px] z-50 relative">
       {/* Left: Logo */}
       <div 
         className="flex items-center h-full py-4 cursor-pointer"
@@ -21,7 +26,7 @@ export const DashboardHeader = () => {
           alt="Watership Logo"
           width={220}
           height={70}
-          className="object-contain"
+          className="object-contain w-auto h-auto"
           priority
         />
       </div>
@@ -53,7 +58,7 @@ export const DashboardHeader = () => {
             </div>
             <div className="w-[38px] h-[38px] rounded-full border-[1.5px] border-[#DDEBF8] overflow-hidden bg-gray-200">
               {/* If there was a real avatar it would go here. For now a placeholder */}
-              <Image src={"/images/img.webp"} alt="image" width={100} height={100} />
+              <Image src={"/images/img.webp"} alt="image" width={100} height={100} className="w-full h-full object-cover" />
               {/* <div className="w-full h-full bg-slate-300" /> */}
             </div>
           </div>
