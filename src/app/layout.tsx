@@ -10,8 +10,13 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "Waterhip | Financial Consultant Platform",
+  title: "Watership | Financial Consultant Platform",
   description: "Financial Consultant Platform",
+  icons: {
+    icon: "/fav.jpg",
+    shortcut: "/fav.jpg",
+    apple: "/fav.jpg",
+  },
 };
 
 export default function RootLayout({
@@ -21,6 +26,11 @@ export default function RootLayout({
 }>) {
   return (
     <html suppressHydrationWarning lang="en" className={`${poppins.className} h-full antialiased`} >
+      <head>
+        <link rel="icon" href="/fav.jpg" type="image/jpeg" />
+        <link rel="shortcut icon" href="/fav.jpg" type="image/jpeg" />
+        <link rel="apple-touch-icon" href="/fav.jpg" />
+      </head>
       <body suppressHydrationWarning className="min-h-full flex flex-col font-sans bg-background text-foreground">
         <QueryProvider>
           {children}
