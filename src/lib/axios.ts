@@ -2,7 +2,7 @@ import axios, { InternalAxiosRequestConfig, AxiosResponse, AxiosError } from "ax
 import { getCookie, clearAuthSession } from "./cookie";
 
 export const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.dev.watership.app",
+  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL ,
   headers: {
     "Content-Type": "application/json",
   },
