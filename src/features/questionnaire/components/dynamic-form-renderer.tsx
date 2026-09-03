@@ -7,7 +7,7 @@ import { QuestionnaireQuestion, QuestionnaireOption } from "@/features/onboardin
 import { format } from "date-fns";
 import { CalendarIcon, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,6 +42,7 @@ import {
 
 interface DynamicFormRendererProps {
   questions: QuestionnaireQuestion[];
+  initialValues?: Record<string, any>;
   onComplete: (data: any) => void;
   onSaveDraft: (data: any) => void;
   isSubmitting?: boolean;
@@ -52,7 +53,13 @@ const normalizeOptions = (options?: (string | QuestionnaireOption)[]): Questionn
   return options.map((opt) => (typeof opt === "string" ? { label: opt, value: opt } : opt));
 };
 
-export const DynamicFormRenderer = ({ questions, onComplete, onSaveDraft, isSubmitting }: DynamicFormRendererProps) => {
+const isValidDate = (val: any) => {
+  if (!val) return false;
+  const d = new Date(val);
+  return !isNaN(d.getTime());
+};
+
+export const DynamicFormRenderer = ({ questions, initialValues, onComplete, onSaveDraft, isSubmitting }: DynamicFormRendererProps) => {
   const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
 
   // Dynamically build Zod schema that correctly validates conditional questions only when active
@@ -116,9 +123,16 @@ export const DynamicFormRenderer = ({ questions, onComplete, onSaveDraft, isSubm
 
   const form = useForm<Record<string, any>>({
     resolver: zodResolver(dynamicSchema),
-    defaultValues: {},
+    defaultValues: initialValues || {},
     reValidateMode: "onChange",
   });
+
+  // Sync form values whenever initial values load or change
+  useEffect(() => {
+    if (initialValues && Object.keys(initialValues).length > 0) {
+      form.reset(initialValues);
+    }
+  }, [initialValues, form]);
 
   // Recursively collect all visible questions in natural sequential order
   const getVisibleQuestions = (qs: QuestionnaireQuestion[]): QuestionnaireQuestion[] => {
@@ -290,10 +304,10 @@ export const DynamicFormRenderer = ({ questions, onComplete, onSaveDraft, isSubm
                       variant={"outline"}
                       className={cn(
                         "w-full h-[40px]! bg-white/15 border-none rounded-[7px] text-left font-normal hover:bg-white/20 hover:text-white",
-                        !field.value ? "text-[#E0E0E0]" : "text-white"
+                        !isValidDate(field.value) ? "text-[#E0E0E0]" : "text-white"
                       )}
                     >
-                      {field.value instanceof Date || typeof field.value === "string" ? (
+                      {isValidDate(field.value) ? (
                         format(new Date(field.value), "d MMMM yyyy")
                       ) : (
                         <span>{q.hintText || "Pick a date"}</span>
@@ -304,8 +318,8 @@ export const DynamicFormRenderer = ({ questions, onComplete, onSaveDraft, isSubm
                   <PopoverContent className="w-auto p-0" align="start">
                     <Calendar
                       mode="single"
-                      selected={field.value ? new Date(field.value) : undefined}
-                      onSelect={(date) => field.onChange(date)}
+                      selected={isValidDate(field.value) ? new Date(field.value) : undefined}
+                      onSelect={(date) => field.onChange(date ? date.toISOString() : undefined)}
                       disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
                     />
                   </PopoverContent>
@@ -317,7 +331,7 @@ export const DynamicFormRenderer = ({ questions, onComplete, onSaveDraft, isSubm
                 <>
                   <FormControl>
                     <Checkbox
-                      checked={Boolean(field.value)}
+                      checked={field.value === true || field.value === "true" || field.value === "Yes" || Boolean(field.value)}
                       onCheckedChange={field.onChange}
                       className="bg-transparent border-white/30 data-checked:!bg-[#2186FF] data-checked:!border-[#2186FF] data-checked:text-white rounded-[4px]"
                     />

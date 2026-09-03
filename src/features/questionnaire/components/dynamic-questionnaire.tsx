@@ -6,7 +6,7 @@ import { QuestionnaireLayout } from "./questionnaire-layout";
 import { DynamicFormRenderer } from "./dynamic-form-renderer";
 import { Skeleton } from "@/components/ui/skeleton";
 import { QuestionnaireSubstep, QuestionnaireAnswer } from "@/features/onboarding/types/onboarding.types";
-import { Suspense } from "react";
+import { Suspense, useMemo } from "react";
 
 import { useProgressStore } from "../store/progress.store";
 
@@ -26,6 +26,27 @@ const DynamicQuestionnaireContent = () => {
   const maxStep = substeps.length;
   const currentStep = stepParam ? parseInt(stepParam, 10) : 1;
   const activeSubstep = substeps.find(s => (s.stepNumber ?? s.substepNumber) === currentStep) || substeps[0];
+
+  // Extract previously saved answers (from draft or submitted steps) into a key-value dictionary
+  const rawData: any = progressResponse?.data;
+  const onboardingData = rawData?.onboarding || rawData;
+  const savedAnswersList = onboardingData?.questionnaire?.answers || [];
+
+  const savedAnswersMap = useMemo(() => {
+    const map: Record<string, any> = {};
+    if (!Array.isArray(savedAnswersList)) return map;
+
+    const extract = (item: any) => {
+      if (!item || !item.questionId) return;
+      map[item.questionId] = item.value;
+      if (Array.isArray(item.conditionalAnswers)) {
+        item.conditionalAnswers.forEach(extract);
+      }
+    };
+
+    savedAnswersList.forEach(extract);
+    return map;
+  }, [savedAnswersList]);
 
   const formatAnswers = (data: any): QuestionnaireAnswer[] => {
     return Object.keys(data).map(key => ({
@@ -106,6 +127,7 @@ const DynamicQuestionnaireContent = () => {
       <DynamicFormRenderer 
         key={currentStepNumber}
         questions={activeSubstep.questions} 
+        initialValues={savedAnswersMap}
         onComplete={handleComplete} 
         onSaveDraft={handleSaveDraft}
         isSubmitting={completeMutation.isPending}

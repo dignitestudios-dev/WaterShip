@@ -20,14 +20,15 @@ export default function RiskAssessmentPage() {
   const rawData: any = progressResponse?.data;
   const onboardingData = rawData?.onboarding || rawData;
   
-  const isQuestionnaireCompleted = 
-    onboardingData?.questionnaire?.status === "completed" || 
-    useProgressStore((state) => state.isCompleted);
-  const isRiskAssessmentCompleted = 
-    onboardingData?.riskAssessment?.status === "completed" || 
-    useProgressStore((state) => state.isRiskAssessmentCompleted);
-  const isLocked = !isQuestionnaireCompleted;
+  const isQuestionnaireStore = useProgressStore((state) => state.isCompleted);
+  const isRiskAssessmentStore = useProgressStore((state) => state.isRiskAssessmentCompleted);
   const setRiskAssessmentCompleted = useProgressStore((state) => state.setRiskAssessmentCompleted);
+
+  const isQuestionnaireCompleted = 
+    onboardingData?.questionnaire?.status === "completed" || isQuestionnaireStore;
+  const isRiskAssessmentCompleted = 
+    onboardingData?.riskAssessment?.status === "completed" || isRiskAssessmentStore;
+  const isLocked = !isQuestionnaireCompleted;
 
   const [submitState, setSubmitState] = useState<'idle' | 'confirm' | 'submitting' | 'success'>('idle');
 

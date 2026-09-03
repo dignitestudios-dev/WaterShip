@@ -7,11 +7,13 @@ import { cn } from "@/lib/utils";
 import { removeCookie, getCookie, clearAuthSession } from "@/lib/cookie";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useGetMe } from "@/features/users/api/users.queries";
+import { useLogout } from "@/features/auth/api/auth.mutations";
 import Image from "next/image";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export const ProfileView = () => {
   const router = useRouter();
+  const logoutMutation = useLogout();
   const [mounted, setMounted] = useState(false);
   const [openSection, setOpenSection] = useState<string[]>(["Personal Information", "Privacy & Security"]);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
@@ -40,9 +42,9 @@ export const ProfileView = () => {
   if (!mounted) return null;
 
   const handleLogout = () => {
-    clearAuthSession();
-    router.push("/login");
+    logoutMutation.mutate();
   };
+
 
   return (
     <div className="flex flex-col items-center justify-start w-full min-h-screen relative overflow-hidden bg-gradient-to-b from-[#034593] to-[#01152D]">
@@ -217,10 +219,11 @@ export const ProfileView = () => {
               Cancel
             </button>
             <button 
-              className="flex-1 h-[54px] rounded-[100px] bg-gradient-to-r from-[#2186FF] to-[#034593] font-medium text-[16px] text-white hover:opacity-90 transition-opacity"
+              className="flex-1 h-[54px] rounded-[100px] bg-gradient-to-r from-[#2186FF] to-[#034593] font-medium text-[16px] text-white hover:opacity-90 transition-opacity disabled:opacity-50"
               onClick={handleLogout}
+              disabled={logoutMutation.isPending}
             >
-              Log Out
+              {logoutMutation.isPending ? "Logging out..." : "Log Out"}
             </button>
           </div>
         </DialogContent>

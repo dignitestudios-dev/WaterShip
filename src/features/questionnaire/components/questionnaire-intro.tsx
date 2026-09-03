@@ -40,15 +40,16 @@ export const QuestionnaireIntro = () => {
     (completedCount > 0 || currentSubstep > 1 || hasAnswers);
 
   const startStepNumber = isServerComplete
-    ? 5
+    ? 1
     : completedCount > 0
       ? Math.max(...serverCompletedSubsteps) + 1
       : currentSubstep > 1
         ? currentSubstep
         : 1;
+
   const handleStart = () => {
     if (isServerComplete) {
-      router.push("/dashboard/questionnaire/completed");
+      router.push("/dashboard/questionnaire/form?step=1");
       return;
     }
 
@@ -90,12 +91,18 @@ export const QuestionnaireIntro = () => {
         {/* Text Area */}
         <div className="flex flex-col items-center gap-[25px] w-[313px]">
           <h2 className="text-white font-semibold text-[26px] leading-[39px] tracking-[-0.025em] text-center">
-            {isResume ? "Resume Your Questionnaire" : "Start Your Questionnaire"}
+            {isServerComplete
+              ? "Edit Your Questionnaire"
+              : isResume
+                ? "Resume Your Questionnaire"
+                : "Start Your Questionnaire"}
           </h2>
           <p className="text-[#E0E0E0] font-normal text-[14px] leading-[21px] text-center">
-            {isResume
-              ? "Pick up where you left off to help us understand your financial profile."
-              : "Complete a few simple steps to help us understand your financial profile and guide your onboarding."}
+            {isServerComplete
+              ? "Review and update any of your previously submitted answers."
+              : isResume
+                ? "Pick up where you left off to help us understand your financial profile."
+                : "Complete a few simple steps to help us understand your financial profile and guide your onboarding."}
           </p>
         </div>
 
@@ -105,7 +112,7 @@ export const QuestionnaireIntro = () => {
           className="w-[343px] h-[42px] bg-gradient-to-r from-[#2186FF] to-[#145199] rounded-[72px] flex items-center justify-center transition-opacity hover:opacity-90"
         >
           <span className="text-white font-medium text-[14px] leading-[21px] text-center">
-            {isResume ? "Resume Now" : "Start Now"}
+            {isServerComplete ? "Edit Responses" : isResume ? "Resume Now" : "Start Now"}
           </span>
         </button>
       </div>

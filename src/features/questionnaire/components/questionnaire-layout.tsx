@@ -5,6 +5,7 @@ import { ChevronLeft, Lock } from "lucide-react";
 import { ReactNode, useEffect, useState } from "react";
 import { motion, AnimatePresence, useMotionValue, useTransform, animate } from "framer-motion";
 import { useProgressStore } from "../store/progress.store";
+import { cn } from "@/lib/utils";
 
 import { useOnboardingProgress } from "@/features/onboarding/api/onboarding.queries";
 
@@ -40,7 +41,7 @@ export const QuestionnaireLayout = ({
         ? questionnaire.currentSubstep
         : 1;
   const storeUnlockedStep = useProgressStore((state) => state.maxUnlockedStep);
-  const effectiveUnlockedStep = Math.max(serverUnlockedStep, storeUnlockedStep);
+  const effectiveUnlockedStep = isServerComplete ? totalSteps + 1 : Math.max(serverUnlockedStep, storeUnlockedStep);
   const isLocked = currentStep > effectiveUnlockedStep;
 
   // We only show progress up to what is unlocked
@@ -66,7 +67,7 @@ export const QuestionnaireLayout = ({
       <div className="w-[799px] max-w-full flex flex-col items-center mt-[130px] z-10 relative">
         <button 
           onClick={() => router.back()} 
-          className="absolute left-[-200px] top-[0px] w-[30px] h-[30px] rounded-full bg-white/15 flex items-center justify-center hover:bg-white/25 transition"
+          className="absolute left-[-200px] top-[0px] w-[30px] h-[30px] rounded-full bg-white/15 flex items-center justify-center hover:bg-white/25 transition cursor-pointer"
         >
           <ChevronLeft className="w-4 h-4 text-white" strokeWidth={3} />
         </button>
@@ -84,18 +85,31 @@ export const QuestionnaireLayout = ({
             <div className="w-full mt-[30px] flex flex-col gap-[10px]">
               {/* Progress Lines */}
               <div className="flex justify-between items-center gap-[6px] w-full">
-                {Array.from({ length: totalSteps }).map((_, i) => (
-                  <motion.div
-                    key={i}
-                    initial={false}
-                    animate={{
-                      borderColor: i+1  < currentStep ? "#FFFFFF" : "#E0E0E0",
-                      opacity: i+1  < currentStep ? 1 : 0.45,
-                    }}
-                    transition={{ duration: 0.5 }}
-                    className="flex-1 border-[2px] rounded-full"
-                  />
-                ))}
+                {Array.from({ length: totalSteps }).map((_, i) => {
+                  const stepNum = i + 1;
+                  const isStepAccessible = stepNum <= effectiveUnlockedStep;
+                  return (
+                    <motion.div
+                      key={i}
+                      onClick={() => {
+                        if (isStepAccessible) {
+                          router.push(`/dashboard/questionnaire/form?step=${stepNum}`);
+                        }
+                      }}
+                      initial={false}
+                      animate={{
+                        borderColor: stepNum <= currentStep ? "#FFFFFF" : "#E0E0E0",
+                        opacity: stepNum <= currentStep ? 1 : 0.45,
+                      }}
+                      transition={{ duration: 0.5 }}
+                      className={cn(
+                        "flex-1 border-[2px] rounded-full transition-all",
+                        isStepAccessible ? "cursor-pointer hover:opacity-100 hover:border-white" : "cursor-default"
+                      )}
+                      title={isStepAccessible ? `Go to Step ${stepNum}` : `Step ${stepNum} (Locked)`}
+                    />
+                  );
+                })}
               </div>
               
               {/* Progress Text */}
