@@ -1,26 +1,38 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Bell, AlertCircle, CheckCircle2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Switch } from "@/components/ui/switch";
+import { usePushNotification } from "@/features/notification";
+import { useSettings, useUpdateSettings } from "@/features/settings";
 
 export default function NotificationPreferencesPage() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
-  
-  // State for the 4 toggles
-  const [toggles, setToggles] = useState([true, true, true, true]);
-  
+  const { data: settingsResponse, isLoading: isSettingsLoading } = useSettings();
+  const updateSettingsMutation = useUpdateSettings();
+  const { permission, isLoading: isPushLoading, enableNotifications } = usePushNotification();
+
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const handleToggle = (index: number) => {
-    const newToggles = [...toggles];
-    newToggles[index] = !newToggles[index];
-    setToggles(newToggles);
+  const isNotificationEnabled = settingsResponse?.data?.isNotificationEnabled ?? false;
+  const isUpdating = updateSettingsMutation.isPending || isPushLoading;
+
+  const handleToggle = async (checked: boolean) => {
+    // 1. Call backend API to update notification preferences (PATCH /settings)
+    updateSettingsMutation.mutate({
+      isNotificationEnabled: checked,
+    });
+
+    // 2. If enabling, also trigger browser permission & FCM token sync to /auth/update-fcm
+    if (checked) {
+      await enableNotifications();
+    }
   };
+
 
   if (!mounted) return null;
 
@@ -46,47 +58,46 @@ export default function NotificationPreferencesPage() {
             Notification Preferences
           </h1>
           <p className="font-normal text-[16px] leading-[140%] text-[#E0E0E0]">
-            Enter your email address and we’ll send you instructions to reset your password.
+            Manage your push notification preferences and alerts to stay updated on your account and activities.
           </p>
         </div>
 
         {/* Toggles List Area */}
         <div className="flex flex-col w-full gap-[20px] mt-[20px]">
-          
-          {[0, 1, 2, 3].map((index) => (
-            <div key={index} className="flex flex-col w-full gap-[20px]">
-              {/* List Item */}
-              <div className="flex items-center justify-between w-full relative h-[81px]">
-                
-                {/* Text Content */}
-                <div className="flex flex-col gap-[10px] absolute left-0 top-0 w-[calc(100%-60px)] md:w-[263px]">
-                  <h3 className="font-medium text-[14px] leading-[21px] text-white">
-                    Enable All Notifications
+          <div className="flex flex-col w-full gap-[20px]">
+            {/* List Item */}
+            <div className="flex items-center justify-between w-full relative min-h-[81px] bg-white/10 p-5 rounded-2xl border border-white/10">
+              
+              {/* Text Content */}
+              <div className="flex flex-col gap-[6px] w-[calc(100%-70px)]">
+                <div className="flex items-center gap-2">
+                  <Bell className="w-4 h-4 text-[#2186FF]" />
+                  <h3 className="font-medium text-[15px] leading-[21px] text-white">
+                    Enable Push Notifications
                   </h3>
-                  <p className="font-normal text-[12px] leading-[22px] text-[#E0E0E0]">
-                    Lorem ipsum dolor sit amet consectetur. Diam aliquet lectus laoreet enim faucibus vitae facilisi.
-                  </p>
                 </div>
+                <p className="font-normal text-[12px] leading-[18px] text-[#E0E0E0]">
+                  Receive real-time alerts about account updates, questionnaire statuses, and important announcements.
+                </p>
+
                 
-                {/* Toggle Switch */}
-                <div className="absolute right-0 top-[28.5px]">
-                  <Switch 
-                    checked={toggles[index]}
-                    onCheckedChange={() => handleToggle(index)}
-                    className="w-[42px] h-[24px] data-checked:bg-[#2186FF] data-unchecked:bg-white/16 border-none [&>span]:bg-white"
-                  />
-                </div>
               </div>
               
-              {/* Divider Line (Except for last item) */}
-              {index < 3 && (
-                <div className="w-full border-t border-white/15" />
-              )}
+              {/* Toggle Switch */}
+              <div className="flex items-center justify-center">
+                <Switch 
+                  checked={isNotificationEnabled}
+                  disabled={isSettingsLoading || isUpdating}
+                  onCheckedChange={handleToggle}
+                  className="w-[42px] h-[24px] data-checked:bg-[#2186FF] data-unchecked:bg-white/16 border-none [&>span]:bg-white"
+                />
+              </div>
             </div>
-          ))}
-
+          </div>
         </div>
       </div>
     </div>
   );
 }
+
+

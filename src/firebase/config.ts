@@ -23,4 +23,7 @@ const appleProvider = new OAuthProvider("apple.com");
 appleProvider.addScope("email");
 appleProvider.addScope("name");
 
-export { app, auth, googleProvider, appleProvider };
+const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
+
+export { app, auth, googleProvider, appleProvider, firebaseConfig, vapidKey };
+

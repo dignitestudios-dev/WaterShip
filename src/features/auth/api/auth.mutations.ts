@@ -22,6 +22,7 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { setCookie, removeCookie, clearAuthSession } from "@/lib/cookie";
 import { getApiErrorMessage } from "@/lib/api-response";
+import { syncFcmToken } from "@/features/notification/lib/sync-fcm";
 
 export const useAuthenticate = () => {
   return useMutation({
@@ -31,6 +32,8 @@ export const useAuthenticate = () => {
       if (data.data?.token) {
         clearAuthSession();
         setCookie("token", data.data.token);
+        // Automatically sync FCM token with /auth/update-fcm
+        syncFcmToken();
       }
       toast.success(data.message || "Authentication successful");
     },
@@ -50,10 +53,13 @@ export const useVerifyOtp = () => {
       if (data.data?.token) {
         clearAuthSession();
         setCookie("token", data.data.token);
+        // Automatically sync FCM token with /auth/update-fcm
+        syncFcmToken();
       }
       toast.success(data.message || "OTP Verified Successfully");
       // router.push("/dashboard");
     },
+
     onError: (error: any) => {
       const message = getApiErrorMessage(error, "Invalid or expired OTP");
       toast.error(message);

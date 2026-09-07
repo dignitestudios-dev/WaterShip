@@ -1,13 +1,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { updateSettings } from "./settings.api";
-import { AppSettings } from "../types/settings.types";
+import { AppSettings, UpdateSettingsPayload } from "../types/settings.types";
 import { toast } from "sonner";
 import { getApiErrorMessage } from "@/lib/api-response";
 
 export const useUpdateSettings = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (payload: Partial<AppSettings>) => updateSettings(payload),
+    mutationFn: (payload: UpdateSettingsPayload) => updateSettings(payload),
     onSuccess: (data) => {
       toast.success("Settings updated successfully");
       queryClient.setQueryData(["settings"], data);

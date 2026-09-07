@@ -6,6 +6,7 @@ import { Bell, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { getCookie } from "@/lib/cookie";
 import { useGetMe } from "@/features/users/api/users.queries";
+import { useUnreadNotificationCount } from "@/features/notification";
 
 export const DashboardHeader = () => {
   const router = useRouter();
@@ -16,6 +17,12 @@ export const DashboardHeader = () => {
   }, []);
 
   const { data: getMeResponse, isLoading } = useGetMe({ enabled: hasToken });
+  const { data: unreadResponse } = useUnreadNotificationCount();
+
+  const unreadCount = typeof unreadResponse?.data === "number"
+    ? unreadResponse.data
+    : (unreadResponse?.data?.unreadCount ?? unreadResponse?.data?.count ?? 0);
+
   const user = getMeResponse?.data;
   const fullName = user?.firstName && user?.lastName 
     ? `${user.firstName} ${user.lastName}` 
@@ -47,7 +54,9 @@ export const DashboardHeader = () => {
             onClick={() => router.push("/dashboard/notifications")}
           >
             <Bell className="w-5 h-5 text-[#034593]" fill="white" />
-            <div className="absolute top-[13px] right-[10px] w-[6.6px] h-[6.6px] bg-[#D11D21] rounded-full" />
+            {unreadCount > 0 && (
+              <div className="absolute top-[10px] right-[9px] min-w-[8px] h-[8px] bg-[#D11D21] rounded-full ring-2 ring-white" />
+            )}
           </div>
 
           {/* Profile Info */}
