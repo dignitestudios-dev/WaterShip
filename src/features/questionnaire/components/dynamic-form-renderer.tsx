@@ -70,12 +70,24 @@ export const DynamicFormRenderer = ({ questions, initialValues, onComplete, onSa
 
         if (q.required) {
           if (q.type === "checkbox") {
-            if (val !== true) {
-              ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: "Must be checked",
-                path: [q.questionId],
-              });
+            const hasOptions = q.options && q.options.length > 0;
+            if (hasOptions) {
+              const arr = Array.isArray(val) ? val : val ? [val] : [];
+              if (arr.length === 0) {
+                ctx.addIssue({
+                  code: z.ZodIssueCode.custom,
+                  message: "Please select at least one option",
+                  path: [q.questionId],
+                });
+              }
+            } else {
+              if (val !== true && val !== "true" && val !== "Yes") {
+                ctx.addIssue({
+                  code: z.ZodIssueCode.custom,
+                  message: "Must be checked",
+                  path: [q.questionId],
+                });
+              }
             }
           } else if (q.type === "date") {
             if (!val) {
@@ -106,7 +118,9 @@ export const DynamicFormRenderer = ({ questions, initialValues, onComplete, onSa
               val !== "" &&
               triggerVal !== undefined &&
               triggerVal !== null &&
-              String(triggerVal).trim().toLowerCase() === String(val).trim().toLowerCase();
+              (Array.isArray(val)
+                ? val.some((v) => String(v).trim().toLowerCase() === String(triggerVal).trim().toLowerCase())
+                : String(triggerVal).trim().toLowerCase() === String(val).trim().toLowerCase());
 
             if (isTriggerMatch && cond.questions && Array.isArray(cond.questions)) {
               cond.questions.forEach(validateQuestion);
@@ -146,6 +160,9 @@ export const DynamicFormRenderer = ({ questions, initialValues, onComplete, onSa
         const activeConditions = q.conditionalLogic.filter((cond) => {
           const triggerVal = cond.triggerValue ?? cond.dependsOnValue;
           if (triggerVal === undefined || triggerVal === null) return false;
+          if (Array.isArray(val)) {
+            return val.some((v) => String(v).trim().toLowerCase() === String(triggerVal).trim().toLowerCase());
+          }
           return String(triggerVal).trim().toLowerCase() === String(val).trim().toLowerCase();
         });
 
@@ -196,12 +213,12 @@ export const DynamicFormRenderer = ({ questions, initialValues, onComplete, onSa
           render={({ field }) => (
             <FormItem
               className={
-                q.type === "checkbox"
+                q.type === "checkbox" && options.length === 0
                   ? "flex flex-row items-center justify-start space-x-3 space-y-0 pt-6"
                   : "flex flex-col"
               }
             >
-              {q.type !== "checkbox" && (
+              {(q.type !== "checkbox" || options.length > 0) && (
                 <FormLabel className="text-white font-medium text-[16px] leading-[22px] min-h-[44px] flex items-end pb-[6px]">
                   <span>{q.text}</span>
                   {q.required && <span className="text-[#D11D21] ml-1">*</span>}
@@ -326,8 +343,52 @@ export const DynamicFormRenderer = ({ questions, initialValues, onComplete, onSa
                 </Popover>
               )}
 
-              {/* Checkbox */}
-              {q.type === "checkbox" && (
+              {/* Checkbox Group */}
+              {q.type === "checkbox" && options.length > 0 && (
+                <FormControl>
+                  <div className="flex flex-wrap items-center gap-[15px] pt-1">
+                    {options.map((opt, i) => {
+                      const currentValues: string[] = Array.isArray(field.value)
+                        ? field.value
+                        : field.value
+                        ? [String(field.value)]
+                        : [];
+                      const isChecked = currentValues.some(
+                        (v) => String(v).trim().toLowerCase() === String(opt.value).trim().toLowerCase()
+                      );
+
+                      return (
+                        <label
+                          key={i}
+                          className="flex items-center gap-2 cursor-pointer select-none"
+                        >
+                          <Checkbox
+                            checked={isChecked}
+                            onCheckedChange={(checked) => {
+                              let nextValues: string[];
+                              if (checked) {
+                                nextValues = [...currentValues, String(opt.value)];
+                              } else {
+                                nextValues = currentValues.filter(
+                                  (v) => String(v).trim().toLowerCase() !== String(opt.value).trim().toLowerCase()
+                                );
+                              }
+                              field.onChange(nextValues);
+                            }}
+                            className="bg-transparent border-white/30 data-checked:!bg-[#2186FF] data-checked:!border-[#2186FF] data-checked:text-white rounded-[4px]"
+                          />
+                          <span className="text-[#E0E0E0] text-[14px] font-medium leading-[21px]">
+                            {opt.label}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </FormControl>
+              )}
+
+              {/* Single Boolean Checkbox */}
+              {q.type === "checkbox" && options.length === 0 && (
                 <>
                   <FormControl>
                     <Checkbox
