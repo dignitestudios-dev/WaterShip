@@ -1,11 +1,11 @@
 import { useProgressStore } from "@/features/questionnaire/store/progress.store";
 import { queryClient } from "@/lib/query-client";
 
-export const getCookie = (name: string) => {
+export const getCookie = (name: string): string | null => {
   if (typeof window === "undefined") return null;
   const value = `; ${document.cookie}`;
   const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop()?.split(";").shift();
+  if (parts.length === 2) return parts.pop()?.split(";").shift() ?? null;
   return null;
 };
 
@@ -40,6 +40,7 @@ export const clearAllCookies = () => {
 export const clearAuthSession = () => {
   // 1. Clear Cookies
   removeCookie("token");
+  removeCookie("isProfileCompleted");
   clearAllCookies();
 
   if (typeof window !== "undefined") {

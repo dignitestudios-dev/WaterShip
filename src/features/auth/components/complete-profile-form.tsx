@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus } from "lucide-react";
+import { Plus, LogOut, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
 import { useForm, Controller } from "react-hook-form";
@@ -15,6 +15,7 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { useCompleteProfile } from "@/features/users/api/users.queries";
+import { useLogout } from "@/features/auth/api/auth.mutations";
 
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
 const ALLOWED_MIME_TYPES = ["image/webp", "image/png", "image/jpeg", "image/jpg"];
@@ -37,6 +38,7 @@ type ProfileFormData = z.infer<typeof profileSchema>;
 export const CompleteProfileForm = () => {
   const router = useRouter();
   const completeProfileMutation = useCompleteProfile();
+  const logoutMutation = useLogout();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [profilePic, setProfilePic] = useState<string | null>(null);
   const [imageError, setImageError] = useState<string | null>(null);
@@ -121,15 +123,37 @@ export const CompleteProfileForm = () => {
     setProfilePic(url);
   };
 
+  if (completeProfileMutation.isSuccess) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[350px] w-full max-w-[80%] mx-auto gap-4 text-center">
+        <Loader2 className="w-10 h-10 text-white animate-spin" />
+        <p className="text-white text-base font-medium">Profile completed! Redirecting to dashboard...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col w-full max-w-[80%] mx-auto">
-      <div className="flex flex-col gap-[25px] mb-[50px] text-center md:text-left">
-        <h1 className="font-semibold text-[40px] leading-[60px] tracking-[-0.025em] text-white">
-          Profile Info
-        </h1>
-        <p className="font-normal text-[16px] leading-[140%] text-[#E0E0E0]">
-          Please submit your profile details!
-        </p>
+      <div className="flex items-start justify-between mb-[30px] gap-4">
+        <div className="flex flex-col gap-[10px] text-center md:text-left">
+          <h1 className="font-semibold text-[32px] md:text-[40px] leading-[120%] tracking-[-0.025em] text-white">
+            Profile Info
+          </h1>
+          <p className="font-normal text-[15px] md:text-[16px] leading-[140%] text-[#E0E0E0]">
+            Please submit your profile details!
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => logoutMutation.mutate()}
+          disabled={logoutMutation.isPending}
+          className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-red-500/15 hover:bg-red-500/25 border border-red-500/30 text-red-300 hover:text-white text-xs font-medium transition-all cursor-pointer shrink-0 disabled:opacity-50"
+          title="Log out and switch account"
+        >
+          <LogOut className="w-3.5 h-3.5 text-red-400" />
+          <span>{logoutMutation.isPending ? "Logging out..." : "Log Out"}</span>
+        </button>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col items-center gap-[23px]">
@@ -259,14 +283,25 @@ export const CompleteProfileForm = () => {
           </div>
         </div>
 
-        <Button
-          type="submit"
-          variant="rounded-blue"
-          className="w-full mt-4"
-          disabled={completeProfileMutation.isPending}
-        >
-          {completeProfileMutation.isPending ? "Saving..." : "Continue"}
-        </Button>
+        <div className="w-full flex flex-col items-center gap-3 mt-4">
+          <Button
+            type="submit"
+            variant="rounded-blue"
+            className="w-full"
+            disabled={completeProfileMutation.isPending || logoutMutation.isPending}
+          >
+            {completeProfileMutation.isPending ? "Saving..." : "Continue"}
+          </Button>
+
+          <button
+            type="button"
+            onClick={() => logoutMutation.mutate()}
+            disabled={logoutMutation.isPending}
+            className="text-xs text-[#E0E0E0] hover:text-white underline cursor-pointer transition-colors disabled:opacity-50"
+          >
+            Want to use a different account? <span className="font-semibold text-white">Log out</span>
+          </button>
+        </div>
       </form>
     </div>
   );

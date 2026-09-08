@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight, HelpCircle, Pencil } from "lucide-react";
+import { ChevronLeft, ChevronRight, HelpCircle, Pencil, LogOut } from "lucide-react";
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -69,8 +69,9 @@ export const ProfileView = () => {
 
       {/* Back Button */}
       <div 
-        className="absolute left-[50px] top-[120px] md:top-[115px] w-[30px] h-[30px] rounded-full bg-white/15 flex items-center justify-center cursor-pointer hover:bg-white/20 transition-colors z-10" 
+        className="absolute left-[20px] md:left-[50px] top-[120px] md:top-[115px] w-[30px] h-[30px] rounded-full bg-white/15 flex items-center justify-center cursor-pointer hover:bg-white/20 transition-colors z-10" 
         onClick={() => router.push("/dashboard")}
+        title="Back to Dashboard"
       >
         <ChevronLeft className="w-[18px] h-[18px] text-white" strokeWidth={2} />
       </div>
@@ -245,8 +246,8 @@ export const ProfileView = () => {
             onClick={() => setShowLogoutDialog(true)}
           >
             <span className="font-medium text-[16px] leading-[24px] tracking-[-0.01em] text-white">
-              Logout
-            </span>
+                Logout
+              </span>
             <ChevronRight className="w-[18px] h-[18px] text-white" />
           </div>
 

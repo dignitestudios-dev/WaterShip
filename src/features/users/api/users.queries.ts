@@ -6,6 +6,7 @@ import { CompleteProfilePayload, UpdateProfilePayload } from "../types/users.typ
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { getApiErrorMessage } from "@/lib/api-response";
+import { setCookie } from "@/lib/cookie";
 
 export const useGetMe = (options?: { enabled?: boolean }) => {
   return useQuery({
@@ -23,9 +24,19 @@ export const useCompleteProfile = () => {
   return useMutation({
     mutationFn: completeProfile,
     onSuccess: (data) => {
-      toast.success(data.message || "Profile completed successfully");
+      setCookie("isProfileCompleted", "true");
+      if (data?.data?.user) {
+        queryClient.setQueryData(["users", "me"], {
+          ...data,
+          data: {
+            ...data.data.user,
+            isProfileCompleted: true,
+          },
+        });
+      }
       queryClient.invalidateQueries({ queryKey: ["users", "me"] });
-      router.push("/dashboard");
+      toast.success(data.message || "Profile completed successfully");
+      router.replace("/dashboard");
     },
     onError: (error: any) => {
       const message = getApiErrorMessage(error, "Failed to complete profile");

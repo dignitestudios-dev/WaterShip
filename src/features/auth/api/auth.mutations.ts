@@ -32,6 +32,9 @@ export const useAuthenticate = () => {
       if (data.data?.token) {
         clearAuthSession();
         setCookie("token", data.data.token);
+        if (data.data.user) {
+          setCookie("isProfileCompleted", String(!!data.data.user.isProfileCompleted));
+        }
         // Automatically sync FCM token with /auth/update-fcm
         syncFcmToken();
       }
@@ -53,6 +56,9 @@ export const useVerifyOtp = () => {
       if (data.data?.token) {
         clearAuthSession();
         setCookie("token", data.data.token);
+        if (data.data.user) {
+          setCookie("isProfileCompleted", String(!!data.data.user.isProfileCompleted));
+        }
         // Automatically sync FCM token with /auth/update-fcm
         syncFcmToken();
       }
