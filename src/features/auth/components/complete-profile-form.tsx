@@ -203,7 +203,7 @@ export const CompleteProfileForm = () => {
             />
             {errors.name && <p className="text-red-400 text-xs mt-0.5">{errors.name.message}</p>}
           </div>
-
+{/*  */}
           <div className="flex flex-col gap-2">
             <label htmlFor="dob" className="font-medium text-[14px] leading-[150%] text-white">
               Date of birth <span className="text-red-400">*</span>
