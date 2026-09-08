@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { Bell, User } from "lucide-react";
+import { Bell } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { getCookie } from "@/lib/cookie";
 import { useGetMe } from "@/features/users/api/users.queries";
@@ -27,6 +27,7 @@ export const DashboardHeader = () => {
   const fullName = user?.firstName && user?.lastName 
     ? `${user.firstName} ${user.lastName}` 
     : user?.firstName || user?.lastName || "User";
+  const initial = (fullName.trim().charAt(0) || "U").toUpperCase();
 
   return (
     <header className="w-full h-[115px] bg-gradient-to-r from-white from-60% to-[#E4F0FB] shadow-[0px_0px_30px_rgba(255,255,255,0.15)] flex items-center justify-between px-6 lg:px-[130px] z-50 relative">
@@ -72,11 +73,11 @@ export const DashboardHeader = () => {
                 {isLoading ? "Loading..." : fullName}
               </span>
             </div>
-            <div className="w-[38px] h-[38px] rounded-full border-[1.5px] border-[#DDEBF8] overflow-hidden bg-gray-200 flex items-center justify-center">
+            <div className="w-[38px] h-[38px] rounded-full border-[1.5px] border-[#DDEBF8] overflow-hidden bg-gradient-to-tr from-[#034593] to-[#2186FF] flex items-center justify-center text-white font-semibold text-[15px] select-none shadow-sm">
               {user?.profilePicture?.location ? (
                 <Image src={user.profilePicture.location} alt="Profile Picture" width={100} height={100} className="w-full h-full object-cover" />
               ) : (
-                <User className="text-gray-400 w-5 h-5" />
+                <span>{initial}</span>
               )}
             </div>
           </div>

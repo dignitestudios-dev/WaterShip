@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { HelpCircle, ChevronLeft } from "lucide-react";
 import { useProgressStore } from "../store/progress.store";
 import { useState, useEffect } from "react";
-import { useOnboardingProgress } from "@/features/onboarding/api/onboarding.queries";
+import { useOnboardingProgress, isAllOnboardingComplete } from "@/features/onboarding";
 
 export const QuestionnaireIntro = () => {
   const router = useRouter();
@@ -17,6 +17,13 @@ export const QuestionnaireIntro = () => {
   const rawData: any = progressResponse?.data;
   const onboardingData = rawData?.onboarding || rawData;
   const questionnaire = onboardingData?.questionnaire;
+  const isAllStepsCompleted = isAllOnboardingComplete(onboardingData);
+
+  useEffect(() => {
+    if (mounted && isAllStepsCompleted) {
+      router.replace("/dashboard/questionnaire/completed");
+    }
+  }, [mounted, isAllStepsCompleted, router]);
 
   const rawCompleted = questionnaire?.completedSubsteps;
   const serverCompletedSubsteps: number[] = Array.isArray(rawCompleted)
@@ -48,6 +55,11 @@ export const QuestionnaireIntro = () => {
         : 1;
 
   const handleStart = () => {
+    if (isAllStepsCompleted) {
+      router.push("/dashboard/questionnaire/completed");
+      return;
+    }
+
     if (isServerComplete) {
       router.push("/dashboard/questionnaire/form?step=1");
       return;

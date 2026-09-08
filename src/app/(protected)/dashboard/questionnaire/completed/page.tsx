@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { ChevronLeft, Check, Edit3 } from "lucide-react";
 import { useEffect } from "react";
 import { useProgressStore } from "@/features/questionnaire/store/progress.store";
-import { useOnboardingProgress } from "@/features/onboarding/api/onboarding.queries";
+import { useOnboardingProgress, isAllOnboardingComplete } from "@/features/onboarding";
 import { Button } from "@/components/ui/button";
 
 export default function QuestionnaireCompletedPage() {
@@ -16,6 +16,7 @@ export default function QuestionnaireCompletedPage() {
   const isServerComplete = onboardingData?.questionnaire?.status === "completed";
   const storeComplete = useProgressStore((state) => state.isCompleted);
   const isCompleted = isServerComplete || storeComplete;
+  const isAllStepsCompleted = isAllOnboardingComplete(onboardingData);
 
   // Redirect if not completed and finished loading
   useEffect(() => {
@@ -59,22 +60,30 @@ export default function QuestionnaireCompletedPage() {
         </div>
         
         <h1 className="text-white font-semibold text-[26px] leading-[39px] tracking-[-0.025em] text-center mb-[10px]">
-          Your Questionnaire Has been<br />Submitted!
+          {isAllStepsCompleted ? (
+            <>Your Questionnaire is<br />Finalized</>
+          ) : (
+            <>Your Questionnaire Has been<br />Submitted!</>
+          )}
         </h1>
         
         <p className="text-[#E0E0E0] font-normal text-[14px] leading-[21px] text-center w-full max-w-[397px]">
-          Your responses have been recorded. You can edit any of your steps at any time.
+          {isAllStepsCompleted
+            ? "All onboarding steps have been successfully completed. Your questionnaire responses are finalized."
+            : "Your responses have been recorded. You can edit any of your steps at any time."}
         </p>
 
         {/* Action Buttons */}
         <div className="flex flex-col gap-[12px] w-full max-w-[340px] mt-[35px]">
-          <button
-            onClick={() => router.push("/dashboard/questionnaire/form?step=1")}
-            className="w-full h-[46px] rounded-[72px] bg-gradient-to-r from-[#2186FF] to-[#145199] text-white font-medium text-[14px] leading-[21px] flex items-center justify-center gap-2 transition-opacity hover:opacity-90 cursor-pointer shadow-lg"
-          >
-            <Edit3 className="w-4 h-4" />
-            <span>Edit Responses</span>
-          </button>
+          {!isAllStepsCompleted && (
+            <button
+              onClick={() => router.push("/dashboard/questionnaire/form?step=1")}
+              className="w-full h-[46px] rounded-[72px] bg-gradient-to-r from-[#2186FF] to-[#145199] text-white font-medium text-[14px] leading-[21px] flex items-center justify-center gap-2 transition-opacity hover:opacity-90 cursor-pointer shadow-lg"
+            >
+              <Edit3 className="w-4 h-4" />
+              <span>Edit Responses</span>
+            </button>
+          )}
 
           <button
             onClick={() => router.push("/dashboard")}

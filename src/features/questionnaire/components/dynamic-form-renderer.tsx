@@ -59,44 +59,14 @@ const isValidDate = (val: any) => {
   return !isNaN(d.getTime());
 };
 
-const isChoiceQuestion = (q: QuestionnaireQuestion) => {
-  return (
-    q.type === "checkbox" ||
-    q.type === "radio" ||
-    q.type === "select" ||
-    q.type === "dropdown" ||
-    q.type === "chips" ||
-    (Array.isArray(q.options) && q.options.length > 0)
-  );
-};
-
 const isEmailField = (q: QuestionnaireQuestion) => {
-  if (isChoiceQuestion(q)) return false;
-  const type = (q.type || "").toLowerCase();
-  const text = (q.text || "").toLowerCase();
-  const id = (q.questionId || "").toLowerCase();
-  return (
-    type === "email" ||
-    text.includes("email") ||
-    id.includes("email")
-  );
+  const type = (q.type || "").toLowerCase().trim();
+  return type === "email";
 };
 
 const isPhoneField = (q: QuestionnaireQuestion) => {
-  if (isChoiceQuestion(q)) return false;
-  const type = (q.type || "").toLowerCase();
-  const text = (q.text || "").toLowerCase();
-  const id = (q.questionId || "").toLowerCase();
-  return (
-    type === "phone" ||
-    type === "tel" ||
-    text.includes("phone") ||
-    text.includes("mobile") ||
-    text.includes("contact number") ||
-    text.includes("cell") ||
-    id.includes("phone") ||
-    id.includes("mobile")
-  );
+  const type = (q.type || "").toLowerCase().trim();
+  return type === "phone" || type === "tel";
 };
 
 const formatPhoneNumber = (val: string): string => {

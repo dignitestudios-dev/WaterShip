@@ -7,7 +7,7 @@ import { motion, AnimatePresence, useMotionValue, useTransform, animate } from "
 import { useProgressStore } from "../store/progress.store";
 import { cn } from "@/lib/utils";
 
-import { useOnboardingProgress } from "@/features/onboarding/api/onboarding.queries";
+import { useOnboardingProgress, isAllOnboardingComplete } from "@/features/onboarding";
 
 interface QuestionnaireLayoutProps {
   children: ReactNode;
@@ -42,6 +42,7 @@ export const QuestionnaireLayout = ({
         : 1;
   const storeUnlockedStep = useProgressStore((state) => state.maxUnlockedStep);
   const effectiveUnlockedStep = isServerComplete ? totalSteps + 1 : Math.max(serverUnlockedStep, storeUnlockedStep);
+  const isAllStepsCompleted = isAllOnboardingComplete(onboardingData);
   const isLocked = currentStep > effectiveUnlockedStep;
 
   // We only show progress up to what is unlocked
@@ -87,7 +88,7 @@ export const QuestionnaireLayout = ({
               <div className="flex justify-between items-center gap-[6px] w-full">
                 {Array.from({ length: totalSteps }).map((_, i) => {
                   const stepNum = i + 1;
-                  const isStepAccessible = stepNum <= effectiveUnlockedStep;
+                  const isStepAccessible = !isAllStepsCompleted && stepNum <= effectiveUnlockedStep;
                   return (
                     <motion.div
                       key={i}

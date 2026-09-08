@@ -1,12 +1,12 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useQuestions, useOnboardingProgress, useCompleteQuestionnaireStep, useSaveQuestionnaireDraft } from "@/features/onboarding/api/onboarding.queries";
+import { useQuestions, useOnboardingProgress, useCompleteQuestionnaireStep, useSaveQuestionnaireDraft, isAllOnboardingComplete } from "@/features/onboarding";
 import { QuestionnaireLayout } from "./questionnaire-layout";
 import { DynamicFormRenderer } from "./dynamic-form-renderer";
 import { Skeleton } from "@/components/ui/skeleton";
 import { QuestionnaireSubstep, QuestionnaireAnswer } from "@/features/onboarding/types/onboarding.types";
-import { Suspense, useMemo } from "react";
+import { Suspense, useEffect, useMemo } from "react";
 import { ClipboardList, HelpCircle, RotateCw } from "lucide-react";
 
 import { useProgressStore } from "../store/progress.store";
@@ -44,6 +44,14 @@ const DynamicQuestionnaireContent = () => {
   const rawData: any = progressResponse?.data;
   const onboardingData = rawData?.onboarding || rawData;
   const savedAnswersList = onboardingData?.questionnaire?.answers || [];
+
+  const isAllStepsCompleted = isAllOnboardingComplete(onboardingData);
+
+  useEffect(() => {
+    if (!isLoadingProgress && isAllStepsCompleted) {
+      router.replace("/dashboard/questionnaire/completed");
+    }
+  }, [isLoadingProgress, isAllStepsCompleted, router]);
 
   const savedAnswersMap = useMemo(() => {
     const map: Record<string, any> = {};
@@ -111,7 +119,7 @@ const DynamicQuestionnaireContent = () => {
     });
   };
 
-  if (isLoading) {
+  if (isLoading || isAllStepsCompleted) {
     return (
       <QuestionnaireLayout currentStep={currentStep} totalSteps={maxStep || 4}>
         <div className="w-[90%] lg:w-[80%] mt-[30px] z-10 flex flex-col gap-[30px]">
