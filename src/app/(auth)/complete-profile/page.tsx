@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { getCookie, setCookie } from "@/lib/cookie";
 import { useGetMe } from "@/features/users/api/users.queries";
 import { CompleteProfileForm } from "@/features/auth";
-import { Loader2 } from "lucide-react";
 
 export default function CompleteProfilePage() {
   const router = useRouter();
@@ -52,19 +51,6 @@ export default function CompleteProfilePage() {
   const currentToken = getCookie("token");
   if (!currentToken) {
     return null;
-  }
-
-  const cookieCompleted = getCookie("isProfileCompleted");
-  if (cookieCompleted === "true") {
-    return null;
-  }
-
-  if (isLoading && cookieCompleted !== "false") {
-    return (
-      <div className="w-full min-h-[300px] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-white animate-spin" />
-      </div>
-    );
   }
 
   return <CompleteProfileForm />;

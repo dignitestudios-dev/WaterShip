@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, LogOut, Loader2 } from "lucide-react";
+import { Plus, LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
 import { useForm, Controller } from "react-hook-form";
@@ -123,14 +123,7 @@ export const CompleteProfileForm = () => {
     setProfilePic(url);
   };
 
-  if (completeProfileMutation.isSuccess) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[350px] w-full max-w-[80%] mx-auto gap-4 text-center">
-        <Loader2 className="w-10 h-10 text-white animate-spin" />
-        <p className="text-white text-base font-medium">Profile completed! Redirecting to dashboard...</p>
-      </div>
-    );
-  }
+  const isSubmitting = completeProfileMutation.isPending || completeProfileMutation.isSuccess;
 
   return (
     <div className="flex flex-col w-full max-w-[80%] mx-auto">
@@ -288,15 +281,15 @@ export const CompleteProfileForm = () => {
             type="submit"
             variant="rounded-blue"
             className="w-full"
-            disabled={completeProfileMutation.isPending || logoutMutation.isPending}
+            disabled={isSubmitting || logoutMutation.isPending}
           >
-            {completeProfileMutation.isPending ? "Saving..." : "Continue"}
+            {isSubmitting ? "Saving..." : "Continue"}
           </Button>
 
           <button
             type="button"
             onClick={() => logoutMutation.mutate()}
-            disabled={logoutMutation.isPending}
+            disabled={isSubmitting || logoutMutation.isPending}
             className="text-xs text-[#E0E0E0] hover:text-white underline cursor-pointer transition-colors disabled:opacity-50"
           >
             Want to use a different account? <span className="font-semibold text-white">Log out</span>
