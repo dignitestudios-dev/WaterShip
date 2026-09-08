@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { QuestionnaireQuestion, QuestionnaireOption } from "@/features/onboarding/types/onboarding.types";
 import { format } from "date-fns";
-import { CalendarIcon, Check } from "lucide-react";
+import { CalendarIcon, Check, Mail, Phone } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 
@@ -59,6 +59,63 @@ const isValidDate = (val: any) => {
   return !isNaN(d.getTime());
 };
 
+const isChoiceQuestion = (q: QuestionnaireQuestion) => {
+  return (
+    q.type === "checkbox" ||
+    q.type === "radio" ||
+    q.type === "select" ||
+    q.type === "dropdown" ||
+    q.type === "chips" ||
+    (Array.isArray(q.options) && q.options.length > 0)
+  );
+};
+
+const isEmailField = (q: QuestionnaireQuestion) => {
+  if (isChoiceQuestion(q)) return false;
+  const type = (q.type || "").toLowerCase();
+  const text = (q.text || "").toLowerCase();
+  const id = (q.questionId || "").toLowerCase();
+  return (
+    type === "email" ||
+    text.includes("email") ||
+    id.includes("email")
+  );
+};
+
+const isPhoneField = (q: QuestionnaireQuestion) => {
+  if (isChoiceQuestion(q)) return false;
+  const type = (q.type || "").toLowerCase();
+  const text = (q.text || "").toLowerCase();
+  const id = (q.questionId || "").toLowerCase();
+  return (
+    type === "phone" ||
+    type === "tel" ||
+    text.includes("phone") ||
+    text.includes("mobile") ||
+    text.includes("contact number") ||
+    text.includes("cell") ||
+    id.includes("phone") ||
+    id.includes("mobile")
+  );
+};
+
+const formatPhoneNumber = (val: string): string => {
+  if (!val) return "";
+  let digits = val.replace(/\D/g, "");
+  if (digits.startsWith("1") && digits.length > 10) {
+    digits = digits.slice(1);
+  }
+  digits = digits.slice(0, 10);
+  if (!digits) return "";
+  if (digits.length <= 3) {
+    return `+1 (${digits}`;
+  }
+  if (digits.length <= 6) {
+    return `+1 (${digits.slice(0, 3)}) ${digits.slice(3)}`;
+  }
+  return `+1 (${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+};
+
 export const DynamicFormRenderer = ({ questions, initialValues, onComplete, onSaveDraft, isSubmitting }: DynamicFormRendererProps) => {
   const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
 
@@ -67,8 +124,44 @@ export const DynamicFormRenderer = ({ questions, initialValues, onComplete, onSa
     return z.record(z.string(), z.any()).superRefine((data, ctx) => {
       const validateQuestion = (q: QuestionnaireQuestion) => {
         const val = data[q.questionId];
+        const strVal = val !== undefined && val !== null ? String(val).trim() : "";
 
-        if (q.required) {
+        if (isEmailField(q)) {
+          if (q.required && !strVal) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: "Email address is required",
+              path: [q.questionId],
+            });
+          } else if (strVal) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(strVal)) {
+              ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Please enter a valid email address (e.g. name@example.com)",
+                path: [q.questionId],
+              });
+            }
+          }
+        } else if (isPhoneField(q)) {
+          const digits = strVal.replace(/\D/g, "");
+          const effectiveDigits = digits.startsWith("1") && digits.length === 11 ? digits.slice(1) : digits;
+          if (q.required && !strVal) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: "Phone number is required",
+              path: [q.questionId],
+            });
+          } else if (strVal) {
+            if (effectiveDigits.length < 10) {
+              ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Please enter a valid 10-digit phone number",
+                path: [q.questionId],
+              });
+            }
+          }
+        } else if (q.required) {
           if (q.type === "checkbox") {
             const hasOptions = q.options && q.options.length > 0;
             if (hasOptions) {
@@ -98,7 +191,7 @@ export const DynamicFormRenderer = ({ questions, initialValues, onComplete, onSa
               });
             }
           } else {
-            if (val === undefined || val === null || String(val).trim() === "") {
+            if (!strVal) {
               ctx.addIssue({
                 code: z.ZodIssueCode.custom,
                 message: "This field is required",
@@ -225,8 +318,44 @@ export const DynamicFormRenderer = ({ questions, initialValues, onComplete, onSa
                 </FormLabel>
               )}
 
+              {/* Email Input */}
+              {isEmailField(q) && (
+                <FormControl>
+                  <div className="relative w-full">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50 pointer-events-none" />
+                    <Input
+                      type="email"
+                      placeholder={q.hintText || "name@example.com"}
+                      {...field}
+                      value={typeof field.value === "string" ? field.value : ""}
+                      className="bg-white/15 border-none rounded-[7px] text-white placeholder:text-white/50 h-[40px]! w-full pl-9"
+                    />
+                  </div>
+                </FormControl>
+              )}
+
+              {/* Phone Input */}
+              {isPhoneField(q) && (
+                <FormControl>
+                  <div className="relative w-full">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50 pointer-events-none" />
+                    <Input
+                      type="tel"
+                      placeholder={q.hintText || "+1 (555) 000-0000"}
+                      {...field}
+                      value={typeof field.value === "string" ? field.value : ""}
+                      onChange={(e) => {
+                        const formatted = formatPhoneNumber(e.target.value);
+                        field.onChange(formatted);
+                      }}
+                      className="bg-white/15 border-none rounded-[7px] text-white placeholder:text-white/50 h-[40px]! w-full pl-9 font-medium"
+                    />
+                  </div>
+                </FormControl>
+              )}
+
               {/* Text / Number Input */}
-              {(q.type === "text" || q.type === "number") && (
+              {!isEmailField(q) && !isPhoneField(q) && (q.type === "text" || q.type === "number") && (
                 <FormControl>
                   <Input
                     type={q.type === "number" ? "number" : "text"}

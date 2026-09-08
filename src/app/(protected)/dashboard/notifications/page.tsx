@@ -25,9 +25,9 @@ export default function NotificationsPage() {
   const notifications: NotificationItem[] = Array.isArray(rawData)
     ? rawData
     : (rawData as any)?.notifications ||
-      (rawData as any)?.docs ||
-      (rawData as any)?.items ||
-      [];
+    (rawData as any)?.docs ||
+    (rawData as any)?.items ||
+    [];
 
   const pagination = (rawData as any)?.pagination;
   const totalPages = pagination?.totalPages || Math.ceil(((rawData as any)?.total || notifications.length) / limit) || 1;
@@ -136,17 +136,16 @@ export default function NotificationsPage() {
               // Notification items
               notifications.map((notif) => {
                 const isUnread = !notif.isRead;
-                const messageText = notif.message || notif.body || notif.subtitle || "";
+                const messageText = notif.description || "";
 
                 return (
                   <div
                     key={notif._id}
                     onClick={() => handleNotificationClick(notif)}
-                    className={`w-full min-h-[80px] border-[0.5px] rounded-[17px] flex items-center justify-between px-[20px] md:px-[30px] py-[20px] transition-all cursor-pointer ${
-                      isUnread
+                    className={`w-full min-h-[80px] border-[0.5px] rounded-[17px] flex items-center justify-between px-[20px] md:px-[30px] py-[20px] transition-all cursor-pointer ${isUnread
                         ? "bg-white/20 border-[#2186FF]/50 shadow-[0_0_15px_rgba(33,134,255,0.15)] hover:bg-white/25"
                         : "bg-white/10 border-[#727272]/15 hover:bg-white/15"
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center gap-[15px] md:gap-[20px] min-w-0 flex-1 pr-2">
                       {/* Icon */}
@@ -162,9 +161,8 @@ export default function NotificationsPage() {
                       {/* Texts */}
                       <div className="flex flex-col gap-[4px] min-w-0 flex-1">
                         <h3
-                          className={`text-[14px] leading-[21px] tracking-[-0.01em] truncate ${
-                            isUnread ? "font-bold text-white" : "font-medium text-white/90"
-                          }`}
+                          className={`text-[14px] leading-[21px] tracking-[-0.01em] truncate ${isUnread ? "font-bold text-white" : "font-medium text-white/90"
+                            }`}
                         >
                           {notif.title}
                         </h3>

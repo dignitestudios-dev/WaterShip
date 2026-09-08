@@ -26,11 +26,11 @@ export const getMe = async (): Promise<ApiResponse<User>> => {
 
 export const updateProfile = async (payload: UpdateProfilePayload): Promise<ApiResponse> => {
   const formData = new FormData();
-  if (payload.firstName) formData.append("firstName", payload.firstName);
-  if (payload.lastName) formData.append("lastName", payload.lastName);
-  if (payload.phone) formData.append("phone", payload.phone);
-  if (payload.dob) formData.append("dob", payload.dob);
-  if (payload.primaryAddress) formData.append("primaryAddress", payload.primaryAddress);
+  if (payload.firstName !== undefined && payload.firstName !== null) formData.append("firstName", payload.firstName);
+  if (payload.lastName !== undefined && payload.lastName !== null) formData.append("lastName", payload.lastName);
+  if (payload.phone !== undefined && payload.phone !== null && payload.phone !== "") formData.append("phone", payload.phone);
+  if (payload.dob !== undefined && payload.dob !== null) formData.append("dob", payload.dob);
+  if (payload.primaryAddress !== undefined && payload.primaryAddress !== null) formData.append("primaryAddress", payload.primaryAddress);
   if (payload.profilePicture) formData.append("profilePicture", payload.profilePicture);
 
   const { data } = await api.patch<ApiResponse>("/users", formData, {

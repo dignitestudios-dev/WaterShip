@@ -1,8 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight, HelpCircle } from "lucide-react";
+import { ChevronLeft, ChevronRight, HelpCircle, Pencil } from "lucide-react";
 import { useEffect, useState } from "react";
+import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { removeCookie, getCookie, clearAuthSession } from "@/lib/cookie";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -10,6 +11,7 @@ import { useGetMe } from "@/features/users/api/users.queries";
 import { useLogout } from "@/features/auth/api/auth.mutations";
 import Image from "next/image";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EditProfileDialog } from "./edit-profile-dialog";
 
 export const ProfileView = () => {
   const router = useRouter();
@@ -17,6 +19,7 @@ export const ProfileView = () => {
   const [mounted, setMounted] = useState(false);
   const [openSection, setOpenSection] = useState<string[]>(["Personal Information", "Privacy & Security"]);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
   
   const hasToken = !!getCookie("token");
   const { data: getMeResponse, isLoading } = useGetMe({ enabled: mounted && hasToken });
@@ -25,6 +28,17 @@ export const ProfileView = () => {
     ? `${user.firstName} ${user.lastName}` 
     : user?.firstName || user?.lastName || "User";
   const email = user?.email || "";
+
+  const formattedDob = user?.dob
+    ? (() => {
+        try {
+          const d = new Date(user.dob);
+          return isNaN(d.getTime()) ? user.dob : format(d, "dd MMMM yyyy");
+        } catch {
+          return user.dob;
+        }
+      })()
+    : "Not provided";
 
   useEffect(() => {
     setMounted(true);
@@ -84,6 +98,17 @@ export const ProfileView = () => {
             ) : (
               <a href={email ? `mailto:${email}` : "#"} className="font-normal text-[11.84px] leading-[18px] underline text-[#E0E0E0]">{email}</a>
             )}
+
+            {!isLoading && (
+              <button
+                type="button"
+                onClick={() => setShowEditDialog(true)}
+                className="mt-2 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/15 hover:bg-white/25 text-white text-xs font-medium transition-all cursor-pointer border border-white/20 hover:border-white/40"
+              >
+                <Pencil className="w-3.5 h-3.5" />
+                Edit Profile
+              </button>
+            )}
           </div>
         </div>
 
@@ -99,7 +124,20 @@ export const ProfileView = () => {
               <span className="font-medium text-[16px] leading-[24px] tracking-[-0.01em] text-white">
                 Personal Information
               </span>
-              <ChevronRight className={cn("w-[18px] h-[18px] text-white transition-transform duration-300", openSection.includes("Personal Information") ? "rotate-90" : "rotate-0")} />
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowEditDialog(true);
+                  }}
+                  className="flex items-center gap-1 text-xs text-white/80 hover:text-white font-medium px-2.5 py-1 rounded-md bg-white/10 hover:bg-white/20 transition-colors cursor-pointer border border-white/15"
+                >
+                  <Pencil className="w-3 h-3" />
+                  Edit
+                </button>
+                <ChevronRight className={cn("w-[18px] h-[18px] text-white transition-transform duration-300", openSection.includes("Personal Information") ? "rotate-90" : "rotate-0")} />
+              </div>
             </div>
             
             {openSection.includes("Personal Information") && (
@@ -107,19 +145,43 @@ export const ProfileView = () => {
                 <div className="w-full border-t border-white/15" />
                 <div className="flex flex-col gap-[10px]">
                   <div className="flex items-center gap-[10px]">
-                    <span className="font-medium text-[14px] leading-[21px] tracking-[-0.01em] text-[#E0E0E0] w-[50px]">
-                      Name:
+                    <span className="font-medium text-[14px] leading-[21px] tracking-[-0.01em] text-[#E0E0E0] w-[80px]">
+                      First Name:
                     </span>
-                    <span className="font-normal text-[14px] leading-[21px] tracking-[-0.01em] text-[#E0E0E0] flex-1">
-                      {isLoading ? <Skeleton className="h-4 w-3/4 bg-white/20" /> : fullName}
+                    <span className="font-normal text-[14px] leading-[21px] tracking-[-0.01em] text-white flex-1">
+                      {isLoading ? <Skeleton className="h-4 w-3/4 bg-white/20" /> : user?.firstName || "Not provided"}
                     </span>
                   </div>
                   <div className="flex items-center gap-[10px]">
-                    <span className="font-medium text-[14px] leading-[21px] tracking-[-0.01em] text-[#E0E0E0] w-[50px]">
+                    <span className="font-medium text-[14px] leading-[21px] tracking-[-0.01em] text-[#E0E0E0] w-[80px]">
+                      Last Name:
+                    </span>
+                    <span className="font-normal text-[14px] leading-[21px] tracking-[-0.01em] text-white flex-1">
+                      {isLoading ? <Skeleton className="h-4 w-3/4 bg-white/20" /> : user?.lastName || "Not provided"}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-[10px]">
+                    <span className="font-medium text-[14px] leading-[21px] tracking-[-0.01em] text-[#E0E0E0] w-[80px]">
                       Email:
                     </span>
-                    <span className="font-normal text-[14px] leading-[21px] text-[#E0E0E0] flex-1">
+                    <span className="font-normal text-[14px] leading-[21px] text-white flex-1">
                       {isLoading ? <Skeleton className="h-4 w-full bg-white/20" /> : email}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-[10px]">
+                    <span className="font-medium text-[14px] leading-[21px] tracking-[-0.01em] text-[#E0E0E0] w-[80px]">
+                      DOB:
+                    </span>
+                    <span className="font-normal text-[14px] leading-[21px] text-white flex-1">
+                      {isLoading ? <Skeleton className="h-4 w-1/2 bg-white/20" /> : formattedDob}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-[10px]">
+                    <span className="font-medium text-[14px] leading-[21px] tracking-[-0.01em] text-[#E0E0E0] w-[80px]">
+                      Address:
+                    </span>
+                    <span className="font-normal text-[14px] leading-[21px] text-white flex-1">
+                      {isLoading ? <Skeleton className="h-4 w-3/4 bg-white/20" /> : user?.primaryAddress || "Not provided"}
                     </span>
                   </div>
                 </div>
@@ -228,6 +290,13 @@ export const ProfileView = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Profile Dialog */}
+      <EditProfileDialog
+        open={showEditDialog}
+        onOpenChange={setShowEditDialog}
+        user={user}
+      />
     </div>
   );
 };

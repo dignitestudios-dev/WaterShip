@@ -8,12 +8,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   useOnboardingProgress,
-  useUploadDocument,
   useCompleteDocumentUpload,
 } from "@/features/onboarding/api/onboarding.queries";
+import { uploadDocument } from "@/features/onboarding/api/onboarding.api";
 import { DocumentCategory } from "@/features/onboarding/types/onboarding.types";
+import { getApiErrorMessage } from "@/lib/api-response";
 
 const DOCUMENTS: { id: DocumentCategory; title: string }[] = [
   { id: "tax_return", title: "Most recent tax return" },
@@ -24,10 +26,12 @@ const DOCUMENTS: { id: DocumentCategory; title: string }[] = [
 
 export default function DocumentUploadPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [mounted, setMounted] = useState(false);
   const [selectedDocId, setSelectedDocId] = useState<DocumentCategory | null>(null);
   const [stagedFile, setStagedFile] = useState<File | null>(null);
   const [showRemoveDialog, setShowRemoveDialog] = useState(false);
+  const [uploadingDocs, setUploadingDocs] = useState<Record<string, boolean>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -35,7 +39,6 @@ export default function DocumentUploadPage() {
   }, []);
 
   const { data: progressResponse } = useOnboardingProgress();
-  const uploadMutation = useUploadDocument();
   const completeMutation = useCompleteDocumentUpload();
 
   const rawData: any = progressResponse?.data;
@@ -69,6 +72,7 @@ export default function DocumentUploadPage() {
   const numUploaded = DOCUMENTS.filter((doc) => !!uploadedMap[doc.id]).length;
   const isAllUploaded =
     numUploaded === DOCUMENTS.length || onboardingData?.documentUpload?.status === "completed";
+  const isAnyDocUploading = Object.values(uploadingDocs).some(Boolean);
 
   if (!mounted) {
     return <div className="w-full min-h-screen bg-gradient-to-b from-[#034593] to-[#01152D]" />;
@@ -80,6 +84,7 @@ export default function DocumentUploadPage() {
   };
 
   const selectedDoc = DOCUMENTS.find((d) => d.id === selectedDocId);
+  const isCurrentDocUploading = !!(selectedDocId && uploadingDocs[selectedDocId]);
   const currentlyUploadedFilename = selectedDocId ? uploadedMap[selectedDocId] : null;
   const displayFilename = stagedFile ? stagedFile.name : currentlyUploadedFilename;
 
@@ -103,23 +108,43 @@ export default function DocumentUploadPage() {
     }
   };
 
-  const handleUploadSubmit = () => {
+  const handleUploadSubmit = async () => {
     if (!selectedDocId || !stagedFile) return;
 
-    uploadMutation.mutate(
-      {
-        file: stagedFile,
-        fileName: stagedFile.name,
-        type: selectedDocId,
-      },
-      {
-        onSuccess: () => {
-          setDocumentUploaded(selectedDocId, stagedFile.name);
-          setSelectedDocId(null);
+    const docId = selectedDocId;
+    const file = stagedFile;
+    const fileName = stagedFile.name;
+
+    setUploadingDocs((prev) => ({ ...prev, [docId]: true }));
+
+    try {
+      const data = await uploadDocument({
+        file,
+        fileName,
+        type: docId,
+      });
+
+      setDocumentUploaded(docId, fileName);
+      queryClient.invalidateQueries({ queryKey: ["onboarding", "progress"] });
+      toast.success(data?.message || "Document uploaded successfully");
+
+      setSelectedDocId((current) => {
+        if (current === docId) {
           setStagedFile(null);
-        },
-      }
-    );
+          return null;
+        }
+        return current;
+      });
+    } catch (error: any) {
+      const message = getApiErrorMessage(error, "Failed to upload document");
+      toast.error(message);
+    } finally {
+      setUploadingDocs((prev) => {
+        const next = { ...prev };
+        delete next[docId];
+        return next;
+      });
+    }
   };
 
   const handleRemoveConfirm = () => {
@@ -149,7 +174,14 @@ export default function DocumentUploadPage() {
       {/* Top Header / Progress */}
       <div className="w-[799px] max-w-full flex flex-col items-center mt-[50px] z-30 relative px-4">
         <button
-          onClick={() => (selectedDocId ? setSelectedDocId(null) : router.back())}
+          onClick={() => {
+            if (selectedDocId) {
+              setSelectedDocId(null);
+              setStagedFile(null);
+            } else {
+              router.back();
+            }
+          }}
           className="absolute left-[0px] md:left-[-200px] top-[0px] w-[30px] h-[30px] rounded-full bg-white/15 flex items-center justify-center hover:bg-white/25 transition"
         >
           <ChevronLeft className="w-4 h-4 text-white" strokeWidth={3} />
@@ -228,22 +260,44 @@ export default function DocumentUploadPage() {
             <div className="mt-[50px] w-full max-w-[487px] flex flex-col items-center gap-[15px]">
               {/* Tap to upload area */}
               <div
-                onClick={() => fileInputRef.current?.click()}
-                className="w-full h-[200px] border-[2px] border-dashed border-[#5B8EDC] bg-[rgba(255,255,255,0.05)] rounded-[17px] flex flex-col items-center justify-center cursor-pointer hover:bg-[rgba(255,255,255,0.1)] transition-colors"
+                onClick={() => {
+                  if (!isCurrentDocUploading) fileInputRef.current?.click();
+                }}
+                className={cn(
+                  "w-full h-[200px] border-[2px] border-dashed border-[#5B8EDC] bg-[rgba(255,255,255,0.05)] rounded-[17px] flex flex-col items-center justify-center transition-colors",
+                  isCurrentDocUploading
+                    ? "opacity-60 cursor-not-allowed"
+                    : "cursor-pointer hover:bg-[rgba(255,255,255,0.1)]"
+                )}
               >
-                <UploadIcon className="w-[30px] h-[30px] text-white mb-[10px]" />
-                <span className="text-white font-medium text-[16px] leading-[24px]">
-                  Tap to upload
-                </span>
-                <span className="text-[#E0E0E0] font-normal text-[12px] leading-[18px] mt-[4px]">
-                  PDF , JPG , PNG , up to 25MB
-                </span>
+                {isCurrentDocUploading ? (
+                  <>
+                    <Loader2 className="w-[30px] h-[30px] text-white animate-spin mb-[10px]" />
+                    <span className="text-white font-medium text-[16px] leading-[24px]">
+                      Uploading document...
+                    </span>
+                    <span className="text-[#E0E0E0] font-normal text-[12px] leading-[18px] mt-[4px]">
+                      Please wait while your document is being uploaded
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <UploadIcon className="w-[30px] h-[30px] text-white mb-[10px]" />
+                    <span className="text-white font-medium text-[16px] leading-[24px]">
+                      Tap to upload
+                    </span>
+                    <span className="text-[#E0E0E0] font-normal text-[12px] leading-[18px] mt-[4px]">
+                      PDF , JPG , PNG , up to 25MB
+                    </span>
+                  </>
+                )}
                 <input
                   type="file"
                   ref={fileInputRef}
                   className="hidden"
                   onChange={handleFileSelect}
                   accept=".pdf,.jpg,.jpeg,.png"
+                  disabled={isCurrentDocUploading}
                 />
               </div>
 
@@ -268,7 +322,8 @@ export default function DocumentUploadPage() {
 
                     <button
                       onClick={() => setShowRemoveDialog(true)}
-                      className="w-[24px] h-[24px] rounded-full bg-[rgba(209,29,33,0.1)] flex items-center justify-center hover:bg-[rgba(209,29,33,0.2)] transition"
+                      disabled={isCurrentDocUploading}
+                      className="w-[24px] h-[24px] rounded-full bg-[rgba(209,29,33,0.1)] flex items-center justify-center hover:bg-[rgba(209,29,33,0.2)] transition disabled:opacity-50"
                     >
                       <X className="w-3.5 h-3.5 text-[#D11D21]" strokeWidth={3} />
                     </button>
@@ -278,10 +333,10 @@ export default function DocumentUploadPage() {
                   {stagedFile && (
                     <button
                       onClick={handleUploadSubmit}
-                      disabled={uploadMutation.isPending}
+                      disabled={isCurrentDocUploading}
                       className="w-full h-[42px] bg-gradient-to-br from-[#2186FF] to-[#01152D] rounded-[96px] flex items-center justify-center mt-[10px] hover:opacity-90 transition shadow-lg disabled:opacity-60"
                     >
-                      {uploadMutation.isPending ? (
+                      {isCurrentDocUploading ? (
                         <div className="flex items-center gap-2">
                           <Loader2 className="w-4 h-4 text-white animate-spin" />
                           <span className="text-white font-medium text-[14px]">Uploading...</span>
@@ -301,6 +356,7 @@ export default function DocumentUploadPage() {
               {DOCUMENTS.map((doc) => {
                 const isUploaded = !!uploadedMap[doc.id];
                 const filename = uploadedMap[doc.id];
+                const isDocUploading = !!uploadingDocs[doc.id];
 
                 return (
                   <div
@@ -312,14 +368,20 @@ export default function DocumentUploadPage() {
                       <div
                         className={cn(
                           "w-[34px] h-[34px] rounded-[10px] flex items-center justify-center",
-                          isUploaded
-                            ? "bg-gradient-to-br from-[#2186FF] to-[rgba(33,134,255,0.15)]"
-                            : "bg-gray-100"
+                          isDocUploading
+                            ? "bg-[#2186FF]/10 text-[#2186FF]"
+                            : isUploaded
+                            ? "bg-gradient-to-br from-[#2186FF] to-[rgba(33,134,255,0.15)] text-white"
+                            : "bg-gray-100 text-gray-400"
                         )}
                       >
-                        <FileText
-                          className={cn("w-[16px] h-[16px]", isUploaded ? "text-white" : "text-gray-400")}
-                        />
+                        {isDocUploading ? (
+                          <Loader2 className="w-[18px] h-[18px] animate-spin text-[#2186FF]" />
+                        ) : (
+                          <FileText
+                            className={cn("w-[16px] h-[16px]", isUploaded ? "text-white" : "text-gray-400")}
+                          />
+                        )}
                       </div>
 
                       <div className="flex flex-col justify-center gap-[2px]">
@@ -327,7 +389,11 @@ export default function DocumentUploadPage() {
                           {doc.title}
                         </span>
                         <span className="font-medium text-[10px] leading-[15px] tracking-[-0.01em] text-[#525252] max-w-[250px] truncate">
-                          {isUploaded ? filename : "Not Uploaded"}
+                          {isDocUploading
+                            ? "Uploading document..."
+                            : isUploaded
+                            ? filename
+                            : "Not Uploaded"}
                         </span>
                       </div>
                     </div>
@@ -335,10 +401,23 @@ export default function DocumentUploadPage() {
                     <span
                       className={cn(
                         "font-medium text-[12px] leading-[18px] tracking-[-0.01em]",
-                        isUploaded ? "text-[#289F2C]" : "text-[#2A2A2A]"
+                        isDocUploading
+                          ? "text-[#2186FF] flex items-center gap-1.5"
+                          : isUploaded
+                          ? "text-[#289F2C]"
+                          : "text-[#2A2A2A]"
                       )}
                     >
-                      {isUploaded ? "Uploaded" : "Upload"}
+                      {isDocUploading ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          Uploading...
+                        </>
+                      ) : isUploaded ? (
+                        "Uploaded"
+                      ) : (
+                        "Upload"
+                      )}
                     </span>
                   </div>
                 );
@@ -347,7 +426,7 @@ export default function DocumentUploadPage() {
               {isAllUploaded && (
                 <button
                   onClick={handleContinue}
-                  disabled={completeMutation.isPending}
+                  disabled={completeMutation.isPending || isAnyDocUploading}
                   className="w-full mt-[30px] h-[42px] bg-gradient-to-br from-[#2186FF] to-[rgba(33,134,255,0.15)] rounded-[96px] flex items-center justify-center hover:opacity-90 transition shadow-lg disabled:opacity-60"
                 >
                   {completeMutation.isPending ? (
@@ -403,3 +482,4 @@ export default function DocumentUploadPage() {
     </div>
   );
 }
+
