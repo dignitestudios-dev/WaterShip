@@ -167,7 +167,7 @@ export default function NotificationsPage() {
                           {notif.title}
                         </h3>
                         {messageText && (
-                          <p className="font-normal text-[12px] leading-[18px] tracking-[-0.01em] text-[#E0E0E0] line-clamp-2">
+                          <p className="font-normal text-[12px] leading-[18px]  text-[#E0E0E0] ">
                             {messageText}
                           </p>
                         )}
