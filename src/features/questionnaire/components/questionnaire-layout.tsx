@@ -64,14 +64,17 @@ export const QuestionnaireLayout = ({
       <div className="absolute -top-[189px] left-[calc(50%-451px/2-738px)] w-[451px] h-[492px] bg-[#2186FF] opacity-45 blur-[203px] rounded-full pointer-events-none" />
       <div className="absolute -bottom-[170px] right-[-206px] w-[451px] h-[492px] bg-[#2186FF] opacity-45 blur-[203px] rounded-full pointer-events-none" />
       
+      {/* Back Button */}
+      <button 
+        onClick={() => router.back()} 
+        className="absolute left-6 md:left-12 lg:left-[130px] top-8 md:top-10 w-[32px] h-[32px] rounded-full bg-white/15 flex items-center justify-center hover:bg-white/25 transition cursor-pointer z-30"
+        title="Go back"
+      >
+        <ChevronLeft className="w-5 h-5 text-white" strokeWidth={2.5} />
+      </button>
+
       {/* Top Header / Progress (Wide stepper style) */}
-      <div className="w-[799px] max-w-full flex flex-col items-center mt-[130px] z-10 relative">
-        <button 
-          onClick={() => router.back()} 
-          className="absolute left-[-200px] top-[0px] w-[30px] h-[30px] rounded-full bg-white/15 flex items-center justify-center hover:bg-white/25 transition cursor-pointer"
-        >
-          <ChevronLeft className="w-4 h-4 text-white" strokeWidth={3} />
-        </button>
+      <div className="w-[799px] max-w-full flex flex-col items-center mt-[80px] md:mt-[100px] z-10 relative px-4">
 
         {!isLocked && (
           <>

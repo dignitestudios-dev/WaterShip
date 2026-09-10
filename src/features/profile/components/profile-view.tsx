@@ -181,7 +181,7 @@ export const ProfileView = () => {
                     <span className="font-medium text-[14px] leading-[21px] tracking-[-0.01em] text-[#E0E0E0] w-[80px]">
                       Address:
                     </span>
-                    <span className="font-normal text-[14px] leading-[21px] text-white flex-1">
+                    <span className="font-normal text-[14px] leading-[21px] text-white flex-1 break-all">
                       {isLoading ? <Skeleton className="h-4 w-3/4 bg-white/20" /> : user?.primaryAddress || "Not provided"}
                     </span>
                   </div>

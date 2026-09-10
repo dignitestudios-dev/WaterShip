@@ -268,7 +268,7 @@ export const DynamicFormRenderer = ({ questions, initialValues, onComplete, onSa
     return (
       <div
         key={q.questionId}
-        className="flex flex-col gap-[8px] w-full animate-in fade-in zoom-in-95 duration-200"
+        className="flex flex-col gap-[8px] w-full min-w-0 max-w-full animate-in fade-in zoom-in-95 duration-200"
       >
         <FormField
           control={form.control}
@@ -277,14 +277,14 @@ export const DynamicFormRenderer = ({ questions, initialValues, onComplete, onSa
             <FormItem
               className={
                 q.type === "checkbox" && options.length === 0
-                  ? "flex flex-row items-center justify-start space-x-3 space-y-0 pt-6"
-                  : "flex flex-col"
+                  ? "flex flex-row items-center justify-start space-x-3 space-y-0 pt-6 min-w-0 max-w-full"
+                  : "flex flex-col min-w-0 max-w-full"
               }
             >
               {(q.type !== "checkbox" || options.length > 0) && (
-                <FormLabel className="text-white font-medium text-[16px] leading-[22px] min-h-[44px] flex items-end pb-[6px]">
-                  <span>{q.text}</span>
-                  {q.required && <span className="text-[#D11D21] ml-1">*</span>}
+                <FormLabel className="text-white font-medium text-[16px] leading-[22px] min-h-[44px] flex flex-wrap items-end pb-[6px] w-full min-w-0 break-words [overflow-wrap:anywhere] break-all">
+                  <span className="break-words [overflow-wrap:anywhere] break-all">{q.text}</span>
+                  {q.required && <span className="text-[#D11D21] ml-1 shrink-0 select-none">*</span>}
                 </FormLabel>
               )}
 
@@ -340,7 +340,7 @@ export const DynamicFormRenderer = ({ questions, initialValues, onComplete, onSa
               {/* Radio Group / Pills */}
               {q.type === "radio" && (
                 <FormControl>
-                  <div className="flex flex-wrap items-center gap-[10px]">
+                  <div className="flex flex-wrap items-center gap-[10px] min-w-0 max-w-full">
                     {options.map((opt, i) => {
                       const isSelected = String(field.value ?? "").toLowerCase() === String(opt.value).toLowerCase();
                       return (
@@ -349,13 +349,13 @@ export const DynamicFormRenderer = ({ questions, initialValues, onComplete, onSa
                           type="button"
                           onClick={() => field.onChange(opt.value)}
                           className={cn(
-                            "h-[40px] px-5 rounded-[7px] text-[14px] font-medium transition-all flex items-center justify-center cursor-pointer border",
+                            "min-h-[40px] py-2 px-5 rounded-[7px] text-[14px] font-medium transition-all flex items-center justify-center cursor-pointer border max-w-full text-center break-words [overflow-wrap:anywhere]",
                             isSelected
                               ? "bg-[#2186FF] text-white border-[#2186FF] shadow-[0px_0px_15px_rgba(33,134,255,0.4)]"
                               : "bg-white/15 text-white border-transparent hover:bg-white/20"
                           )}
                         >
-                          {opt.label}
+                          <span className="break-words [overflow-wrap:anywhere]">{opt.label}</span>
                         </button>
                       );
                     })}
@@ -366,7 +366,7 @@ export const DynamicFormRenderer = ({ questions, initialValues, onComplete, onSa
               {/* Chips / Multi-choice Pills */}
               {q.type === "chips" && (
                 <FormControl>
-                  <div className="flex flex-wrap items-center gap-[10px]">
+                  <div className="flex flex-wrap items-center gap-[10px] min-w-0 max-w-full">
                     {options.map((opt, i) => {
                       const isSelected = String(field.value ?? "").toLowerCase() === String(opt.value).toLowerCase();
                       return (
@@ -375,13 +375,13 @@ export const DynamicFormRenderer = ({ questions, initialValues, onComplete, onSa
                           type="button"
                           onClick={() => field.onChange(opt.value)}
                           className={cn(
-                            "h-[36px] px-4 rounded-[20px] text-[13px] font-medium transition-all flex items-center justify-center cursor-pointer border",
+                            "min-h-[36px] py-1.5 px-4 rounded-[20px] text-[13px] font-medium transition-all flex items-center justify-center cursor-pointer border max-w-full text-center break-words [overflow-wrap:anywhere]",
                             isSelected
                               ? "bg-[#2186FF] text-white border-[#2186FF] shadow-[0px_0px_15px_rgba(33,134,255,0.4)]"
                               : "bg-white/15 text-white border-transparent hover:bg-white/20"
                           )}
                         >
-                          {opt.label}
+                          <span className="break-words [overflow-wrap:anywhere]">{opt.label}</span>
                         </button>
                       );
                     })}
@@ -459,7 +459,7 @@ export const DynamicFormRenderer = ({ questions, initialValues, onComplete, onSa
                       return (
                         <label
                           key={i}
-                          className="flex items-center gap-2 cursor-pointer select-none"
+                          className="flex items-center gap-2 cursor-pointer select-none max-w-full min-w-0"
                         >
                           <Checkbox
                             checked={isChecked}
@@ -474,9 +474,9 @@ export const DynamicFormRenderer = ({ questions, initialValues, onComplete, onSa
                               }
                               field.onChange(nextValues);
                             }}
-                            className="bg-transparent border-white/30 data-checked:!bg-[#2186FF] data-checked:!border-[#2186FF] data-checked:text-white rounded-[4px]"
+                            className="bg-transparent border-white/30 data-checked:!bg-[#2186FF] data-checked:!border-[#2186FF] data-checked:text-white rounded-[4px] shrink-0"
                           />
-                          <span className="text-[#E0E0E0] text-[14px] font-medium leading-[21px]">
+                          <span className="text-[#E0E0E0] text-[14px] font-medium leading-[21px] break-words [overflow-wrap:anywhere] break-all min-w-0">
                             {opt.label}
                           </span>
                         </label>
@@ -493,12 +493,12 @@ export const DynamicFormRenderer = ({ questions, initialValues, onComplete, onSa
                     <Checkbox
                       checked={field.value === true || field.value === "true" || field.value === "Yes" || Boolean(field.value)}
                       onCheckedChange={field.onChange}
-                      className="bg-transparent border-white/30 data-checked:!bg-[#2186FF] data-checked:!border-[#2186FF] data-checked:text-white rounded-[4px]"
+                      className="bg-transparent border-white/30 data-checked:!bg-[#2186FF] data-checked:!border-[#2186FF] data-checked:text-white rounded-[4px] shrink-0"
                     />
                   </FormControl>
-                  <FormLabel className="text-[#E0E0E0] font-medium text-[14px] leading-[21px] cursor-pointer">
-                    {q.text}
-                    {q.required && <span className="text-[#D11D21] ml-1">*</span>}
+                  <FormLabel className="text-[#E0E0E0] font-medium text-[14px] leading-[21px] cursor-pointer break-words [overflow-wrap:anywhere] break-all min-w-0">
+                    <span className="break-words [overflow-wrap:anywhere] break-all">{q.text}</span>
+                    {q.required && <span className="text-[#D11D21] ml-1 shrink-0 select-none">*</span>}
                   </FormLabel>
                 </>
               )}
@@ -515,7 +515,7 @@ export const DynamicFormRenderer = ({ questions, initialValues, onComplete, onSa
     <div className="w-[90%] lg:w-[80%] mt-[30px] z-10">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="w-full flex flex-col gap-[30px]">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-x-[30px] gap-y-[30px] w-full">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-x-[30px] gap-y-[30px] w-full min-w-0">
             {visibleQuestions.map(renderField)}
           </div>
 

@@ -21,6 +21,12 @@ import { User } from "@/features/auth";
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
 const ALLOWED_MIME_TYPES = ["image/webp", "image/png", "image/jpeg", "image/jpg"];
 
+const isAtLeast13YearsOld = (date: Date) => {
+  const today = new Date();
+  const minDate = new Date(today.getFullYear() - 13, today.getMonth(), today.getDate());
+  return date <= minDate;
+};
+
 const editProfileSchema = z.object({
   firstName: z.string().trim().min(1, "First name is required"),
   lastName: z.string().trim().min(1, "Last name is required"),
@@ -29,6 +35,9 @@ const editProfileSchema = z.object({
     .optional()
     .refine((val) => !val || (val instanceof Date && !isNaN(val.getTime())), {
       message: "Please enter a valid date",
+    })
+    .refine((val) => !val || (val instanceof Date && isAtLeast13YearsOld(val)), {
+      message: "You must be at least 13 years old",
     }),
   primaryAddress: z.string().optional(),
 });
@@ -123,6 +132,11 @@ export const EditProfileDialog = ({
   const onSubmit = (data: EditProfileFormData) => {
     if (imageError) {
       toast.error(imageError);
+      return;
+    }
+
+    if (data.dob && data.dob instanceof Date && !isAtLeast13YearsOld(data.dob)) {
+      toast.error("You must be at least 13 years old");
       return;
     }
 
@@ -302,12 +316,14 @@ export const EditProfileDialog = ({
                           field.onChange(date);
                           setIsDatePickerOpen(false);
                         }}
-                        disabled={(date) =>
-                          date > new Date() || date < new Date("1900-01-01")
-                        }
+                        disabled={(date) => {
+                          const today = new Date();
+                          const minDate = new Date(today.getFullYear() - 13, today.getMonth(), today.getDate());
+                          return date > minDate || date < new Date("1900-01-01");
+                        }}
                         captionLayout="dropdown"
                         startMonth={new Date(1900, 0)}
-                        endMonth={new Date()}
+                        endMonth={new Date(new Date().getFullYear() - 13, new Date().getMonth())}
                       />
                     </PopoverContent>
                   </Popover>

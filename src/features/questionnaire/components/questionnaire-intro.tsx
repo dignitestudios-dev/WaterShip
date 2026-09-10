@@ -81,7 +81,8 @@ export const QuestionnaireIntro = () => {
       {/* Back Button */}
       <button
         onClick={() => router.back()}
-        className="absolute top-8 left-8 md:top-44 md:left-44 w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition z-50"
+        className="absolute left-6 md:left-12 lg:left-[130px] top-8 md:top-10 w-[32px] h-[32px] rounded-full bg-white/15 flex items-center justify-center hover:bg-white/25 transition cursor-pointer z-50"
+        title="Go back"
       >
         <ChevronLeft className="w-5 h-5 text-white" strokeWidth={2.5} />
       </button>

@@ -20,6 +20,12 @@ import { useLogout } from "@/features/auth/api/auth.mutations";
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
 const ALLOWED_MIME_TYPES = ["image/webp", "image/png", "image/jpeg", "image/jpg"];
 
+const isAtLeast13YearsOld = (date: Date) => {
+  const today = new Date();
+  const minDate = new Date(today.getFullYear() - 13, today.getMonth(), today.getDate());
+  return date <= minDate;
+};
+
 const profileSchema = z.object({
   name: z
     .string()
@@ -29,6 +35,9 @@ const profileSchema = z.object({
     .any()
     .refine((val) => val instanceof Date && !isNaN(val.getTime()), {
       message: "Date of birth is required",
+    })
+    .refine((val) => val instanceof Date && isAtLeast13YearsOld(val), {
+      message: "You must be at least 13 years old to register",
     }),
   address: z.string().optional(),
 });
@@ -65,6 +74,10 @@ export const CompleteProfileForm = () => {
       return;
     }
     if (!data.dob || !(data.dob instanceof Date) || isNaN(data.dob.getTime())) {
+      return;
+    }
+    if (!isAtLeast13YearsOld(data.dob)) {
+      toast.error("You must be at least 13 years old to register");
       return;
     }
     if (imageError) {
@@ -158,6 +171,7 @@ export const CompleteProfileForm = () => {
             ref={fileInputRef}
             className="hidden"
             onChange={handleFileChange}
+
           />
           <div
             onClick={() => fileInputRef.current?.click()}
@@ -200,10 +214,12 @@ export const CompleteProfileForm = () => {
                 "h-[51px] rounded-[7px] border-none bg-white/15 text-white placeholder:text-[#E0E0E0] px-5 focus-visible:ring-1 focus-visible:ring-[#2186FF]",
                 errors.name && "ring-1 ring-red-400 bg-red-500/10"
               )}
+              maxLength={50}
+
             />
             {errors.name && <p className="text-red-400 text-xs mt-0.5">{errors.name.message}</p>}
           </div>
-{/*  */}
+          {/*  */}
           <div className="flex flex-col gap-2">
             <label htmlFor="dob" className="font-medium text-[14px] leading-[150%] text-white">
               Date of birth <span className="text-red-400">*</span>
@@ -249,12 +265,14 @@ export const CompleteProfileForm = () => {
                         field.onChange(date);
                         setIsDatePickerOpen(false);
                       }}
-                      disabled={(date) =>
-                        date > new Date() || date < new Date("1900-01-01")
-                      }
+                      disabled={(date) => {
+                        const today = new Date();
+                        const minDate = new Date(today.getFullYear() - 13, today.getMonth(), today.getDate());
+                        return date > minDate || date < new Date("1900-01-01");
+                      }}
                       captionLayout="dropdown"
                       startMonth={new Date(1900, 0)}
-                      endMonth={new Date()}
+                      endMonth={new Date(new Date().getFullYear() - 13, new Date().getMonth())}
                     />
                   </PopoverContent>
                 </Popover>
@@ -271,6 +289,7 @@ export const CompleteProfileForm = () => {
               id="address"
               placeholder="Enter your address..."
               {...register("address")}
+              maxLength={250}
               className="h-[51px] rounded-[7px] border-none bg-white/15 text-white placeholder:text-[#E0E0E0] px-5 focus-visible:ring-1 focus-visible:ring-[#2186FF]"
             />
           </div>

@@ -43,14 +43,13 @@ export default function QuestionnaireCompletedPage() {
       <div className="absolute -bottom-[170px] right-[-206px] w-[451px] h-[492px] bg-[#2186FF] opacity-45 blur-[203px] rounded-full pointer-events-none" />
       
       {/* Back Button */}
-      <div className="absolute top-[30px] sm:top-[130px] left-[30px] sm:left-[calc(50%-400px)] z-20">
-        <button 
-          onClick={() => router.push("/dashboard")} 
-          className="w-[30px] h-[30px] rounded-full bg-white/15 flex items-center justify-center hover:bg-white/25 transition cursor-pointer"
-        >
-          <ChevronLeft className="w-4 h-4 text-white" strokeWidth={3} />
-        </button>
-      </div>
+      <button 
+        onClick={() => router.push("/dashboard")} 
+        className="absolute left-6 md:left-12 lg:left-[130px] top-8 md:top-10 w-[32px] h-[32px] rounded-full bg-white/15 flex items-center justify-center hover:bg-white/25 transition cursor-pointer z-30"
+        title="Back to Dashboard"
+      >
+        <ChevronLeft className="w-5 h-5 text-white" strokeWidth={2.5} />
+      </button>
 
       <div className="flex-1 flex flex-col items-center justify-center z-10 w-full max-w-[441px] px-4 -mt-10">
         
