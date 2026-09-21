@@ -59,6 +59,17 @@ const isValidDate = (val: any) => {
   return !isNaN(d.getTime());
 };
 
+const isQuestionArchived = (q: any): boolean => {
+  if (!q) return false;
+  return Boolean(
+    q.isArchived === true ||
+    q.archived === true ||
+    q.is_archived === true ||
+    q.isArchived === "true" ||
+    q.archived === "true"
+  );
+};
+
 const isEmailField = (q: QuestionnaireQuestion) => {
   const type = (q.type || "").toLowerCase().trim();
   return type === "email";
@@ -93,6 +104,7 @@ export const DynamicFormRenderer = ({ questions, initialValues, onComplete, onSa
   const generateSchema = (qs: QuestionnaireQuestion[]) => {
     return z.record(z.string(), z.any()).superRefine((data, ctx) => {
       const validateQuestion = (q: QuestionnaireQuestion) => {
+        if (isQuestionArchived(q)) return;
         const val = data[q.questionId];
         const strVal = val !== undefined && val !== null ? String(val).trim() : "";
 
@@ -264,11 +276,15 @@ export const DynamicFormRenderer = ({ questions, initialValues, onComplete, onSa
 
   const renderField = (q: QuestionnaireQuestion) => {
     const options = normalizeOptions(q.options);
+    const isDisabled = isQuestionArchived(q);
 
     return (
       <div
         key={q.questionId}
-        className="flex flex-col gap-[8px] w-full min-w-0 max-w-full animate-in fade-in zoom-in-95 duration-200"
+        className={cn(
+          "flex flex-col gap-[8px] w-full min-w-0 max-w-full animate-in fade-in zoom-in-95 duration-200",
+          isDisabled && "opacity-60 pointer-events-none select-none"
+        )}
       >
         <FormField
           control={form.control}
@@ -284,7 +300,12 @@ export const DynamicFormRenderer = ({ questions, initialValues, onComplete, onSa
               {(q.type !== "checkbox" || options.length > 0) && (
                 <FormLabel className="text-white font-medium text-[16px] leading-[22px] min-h-[44px] flex flex-wrap items-end pb-[6px] w-full min-w-0 break-words [overflow-wrap:anywhere] break-all">
                   <span className="break-words [overflow-wrap:anywhere] break-all">{q.text}</span>
-                  {q.required && <span className="text-[#D11D21] ml-1 shrink-0 select-none">*</span>}
+                  {q.required && !isDisabled && <span className="text-[#D11D21] ml-1 shrink-0 select-none">*</span>}
+                  {isDisabled && (
+                    <span className="ml-2 text-xs font-normal text-white/60 bg-white/10 px-2 py-0.5 rounded-[4px] select-none border border-white/10">
+                      Archived
+                    </span>
+                  )}
                 </FormLabel>
               )}
 
@@ -297,8 +318,12 @@ export const DynamicFormRenderer = ({ questions, initialValues, onComplete, onSa
                       type="email"
                       placeholder={q.hintText || "name@example.com"}
                       {...field}
+                      disabled={isDisabled}
                       value={typeof field.value === "string" ? field.value : ""}
-                      className="bg-white/15 border-none rounded-[7px] text-white placeholder:text-white/50 h-[40px]! w-full pl-9"
+                      className={cn(
+                        "bg-white/15 border-none rounded-[7px] text-white placeholder:text-white/50 h-[40px]! w-full pl-9",
+                        isDisabled && "cursor-not-allowed opacity-60"
+                      )}
                     />
                   </div>
                 </FormControl>
@@ -313,12 +338,17 @@ export const DynamicFormRenderer = ({ questions, initialValues, onComplete, onSa
                       type="tel"
                       placeholder={q.hintText || "+1 (555) 000-0000"}
                       {...field}
+                      disabled={isDisabled}
                       value={typeof field.value === "string" ? field.value : ""}
                       onChange={(e) => {
+                        if (isDisabled) return;
                         const formatted = formatPhoneNumber(e.target.value);
                         field.onChange(formatted);
                       }}
-                      className="bg-white/15 border-none rounded-[7px] text-white placeholder:text-white/50 h-[40px]! w-full pl-9 font-medium"
+                      className={cn(
+                        "bg-white/15 border-none rounded-[7px] text-white placeholder:text-white/50 h-[40px]! w-full pl-9 font-medium",
+                        isDisabled && "cursor-not-allowed opacity-60"
+                      )}
                     />
                   </div>
                 </FormControl>
@@ -331,8 +361,12 @@ export const DynamicFormRenderer = ({ questions, initialValues, onComplete, onSa
                     type={q.type === "number" ? "number" : "text"}
                     placeholder={q.hintText || "Enter answer"}
                     {...field}
+                    disabled={isDisabled}
                     value={typeof field.value === "string" || typeof field.value === "number" ? field.value : ""}
-                    className="bg-white/15 border-none rounded-[7px] text-white placeholder:text-white/50 h-[40px]! w-full"
+                    className={cn(
+                      "bg-white/15 border-none rounded-[7px] text-white placeholder:text-white/50 h-[40px]! w-full",
+                      isDisabled && "cursor-not-allowed opacity-60"
+                    )}
                   />
                 </FormControl>
               )}
@@ -347,9 +381,11 @@ export const DynamicFormRenderer = ({ questions, initialValues, onComplete, onSa
                         <button
                           key={i}
                           type="button"
-                          onClick={() => field.onChange(opt.value)}
+                          disabled={isDisabled}
+                          onClick={() => !isDisabled && field.onChange(opt.value)}
                           className={cn(
-                            "min-h-[40px] py-2 px-5 rounded-[7px] text-[14px] font-medium transition-all flex items-center justify-center cursor-pointer border max-w-full text-center break-words [overflow-wrap:anywhere]",
+                            "min-h-[40px] py-2 px-5 rounded-[7px] text-[14px] font-medium transition-all flex items-center justify-center border max-w-full text-center break-words [overflow-wrap:anywhere]",
+                            isDisabled ? "cursor-not-allowed opacity-60" : "cursor-pointer",
                             isSelected
                               ? "bg-[#2186FF] text-white border-[#2186FF] shadow-[0px_0px_15px_rgba(33,134,255,0.4)]"
                               : "bg-white/15 text-white border-transparent hover:bg-white/20"
@@ -373,9 +409,11 @@ export const DynamicFormRenderer = ({ questions, initialValues, onComplete, onSa
                         <button
                           key={i}
                           type="button"
-                          onClick={() => field.onChange(opt.value)}
+                          disabled={isDisabled}
+                          onClick={() => !isDisabled && field.onChange(opt.value)}
                           className={cn(
-                            "min-h-[36px] py-1.5 px-4 rounded-[20px] text-[13px] font-medium transition-all flex items-center justify-center cursor-pointer border max-w-full text-center break-words [overflow-wrap:anywhere]",
+                            "min-h-[36px] py-1.5 px-4 rounded-[20px] text-[13px] font-medium transition-all flex items-center justify-center border max-w-full text-center break-words [overflow-wrap:anywhere]",
+                            isDisabled ? "cursor-not-allowed opacity-60" : "cursor-pointer",
                             isSelected
                               ? "bg-[#2186FF] text-white border-[#2186FF] shadow-[0px_0px_15px_rgba(33,134,255,0.4)]"
                               : "bg-white/15 text-white border-transparent hover:bg-white/20"
@@ -391,9 +429,12 @@ export const DynamicFormRenderer = ({ questions, initialValues, onComplete, onSa
 
               {/* Select / Dropdown */}
               {(q.type === "select" || q.type === "dropdown") && (
-                <Select onValueChange={field.onChange} value={field.value || ""}>
+                <Select onValueChange={field.onChange} value={field.value || ""} disabled={isDisabled}>
                   <FormControl>
-                    <SelectTrigger className="bg-white/15 border-none rounded-[7px] text-white h-[40px]! w-full [&_svg]:text-white">
+                    <SelectTrigger className={cn(
+                      "bg-white/15 border-none rounded-[7px] text-white h-[40px]! w-full [&_svg]:text-white",
+                      isDisabled && "cursor-not-allowed opacity-60"
+                    )}>
                       <SelectValue placeholder={q.hintText || "Select"} className="text-white" />
                     </SelectTrigger>
                   </FormControl>
@@ -414,31 +455,37 @@ export const DynamicFormRenderer = ({ questions, initialValues, onComplete, onSa
               {/* Date */}
               {q.type === "date" && (
                 <Popover>
-                  <PopoverTrigger>
-                    <Button
-                      type="button"
-                      variant={"outline"}
-                      className={cn(
-                        "w-full h-[40px]! bg-white/15 border-none rounded-[7px] text-left font-normal hover:bg-white/20 hover:text-white",
-                        !isValidDate(field.value) ? "text-[#E0E0E0]" : "text-white"
-                      )}
-                    >
-                      {isValidDate(field.value) ? (
-                        format(new Date(field.value), "d MMMM yyyy")
-                      ) : (
-                        <span>{q.hintText || "Pick a date"}</span>
-                      )}
-                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50 text-[#E0E0E0]" />
-                    </Button>
+                  <PopoverTrigger
+                    render={
+                      <Button
+                        type="button"
+                        variant={"outline"}
+                        disabled={isDisabled}
+                        className={cn(
+                          "w-full h-[40px]! bg-white/15 border-none rounded-[7px] text-left font-normal hover:bg-white/20 hover:text-white flex items-center justify-between",
+                          !isValidDate(field.value) ? "text-[#E0E0E0]" : "text-white",
+                          isDisabled && "cursor-not-allowed opacity-60 hover:bg-white/15 hover:text-white"
+                        )}
+                      />
+                    }
+                  >
+                    {isValidDate(field.value) ? (
+                      format(new Date(field.value), "d MMMM yyyy")
+                    ) : (
+                      <span>{q.hintText || "Pick a date"}</span>
+                    )}
+                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50 text-[#E0E0E0]" />
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={isValidDate(field.value) ? new Date(field.value) : undefined}
-                      onSelect={(date) => field.onChange(date ? date.toISOString() : undefined)}
-                      disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
-                    />
-                  </PopoverContent>
+                  {!isDisabled && (
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={isValidDate(field.value) ? new Date(field.value) : undefined}
+                        onSelect={(date) => field.onChange(date ? date.toISOString() : undefined)}
+                        disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
+                      />
+                    </PopoverContent>
+                  )}
                 </Popover>
               )}
 
@@ -450,8 +497,8 @@ export const DynamicFormRenderer = ({ questions, initialValues, onComplete, onSa
                       const currentValues: string[] = Array.isArray(field.value)
                         ? field.value
                         : field.value
-                        ? [String(field.value)]
-                        : [];
+                          ? [String(field.value)]
+                          : [];
                       const isChecked = currentValues.some(
                         (v) => String(v).trim().toLowerCase() === String(opt.value).trim().toLowerCase()
                       );
@@ -459,11 +506,16 @@ export const DynamicFormRenderer = ({ questions, initialValues, onComplete, onSa
                       return (
                         <label
                           key={i}
-                          className="flex items-center gap-2 cursor-pointer select-none max-w-full min-w-0"
+                          className={cn(
+                            "flex items-center gap-2 select-none max-w-full min-w-0",
+                            isDisabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"
+                          )}
                         >
                           <Checkbox
                             checked={isChecked}
+                            disabled={isDisabled}
                             onCheckedChange={(checked) => {
+                              if (isDisabled) return;
                               let nextValues: string[];
                               if (checked) {
                                 nextValues = [...currentValues, String(opt.value)];
@@ -474,7 +526,7 @@ export const DynamicFormRenderer = ({ questions, initialValues, onComplete, onSa
                               }
                               field.onChange(nextValues);
                             }}
-                            className="bg-transparent border-white/30 data-checked:!bg-[#2186FF] data-checked:!border-[#2186FF] data-checked:text-white rounded-[4px] shrink-0"
+                            className="bg-transparent border-white/30 data-checked:!bg-[#2186FF] data-checked:!border-[#2186FF] data-checked:text-white rounded-[4px] shrink-0 disabled:cursor-not-allowed"
                           />
                           <span className="text-[#E0E0E0] text-[14px] font-medium leading-[21px] break-words [overflow-wrap:anywhere] break-all min-w-0">
                             {opt.label}
@@ -492,13 +544,25 @@ export const DynamicFormRenderer = ({ questions, initialValues, onComplete, onSa
                   <FormControl>
                     <Checkbox
                       checked={field.value === true || field.value === "true" || field.value === "Yes" || Boolean(field.value)}
-                      onCheckedChange={field.onChange}
-                      className="bg-transparent border-white/30 data-checked:!bg-[#2186FF] data-checked:!border-[#2186FF] data-checked:text-white rounded-[4px] shrink-0"
+                      disabled={isDisabled}
+                      onCheckedChange={(checked) => {
+                        if (isDisabled) return;
+                        field.onChange(checked);
+                      }}
+                      className="bg-transparent border-white/30 data-checked:!bg-[#2186FF] data-checked:!border-[#2186FF] data-checked:text-white rounded-[4px] shrink-0 disabled:cursor-not-allowed"
                     />
                   </FormControl>
-                  <FormLabel className="text-[#E0E0E0] font-medium text-[14px] leading-[21px] cursor-pointer break-words [overflow-wrap:anywhere] break-all min-w-0">
+                  <FormLabel className={cn(
+                    "text-[#E0E0E0] font-medium text-[14px] leading-[21px] break-words [overflow-wrap:anywhere] break-all min-w-0",
+                    isDisabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"
+                  )}>
                     <span className="break-words [overflow-wrap:anywhere] break-all">{q.text}</span>
-                    {q.required && <span className="text-[#D11D21] ml-1 shrink-0 select-none">*</span>}
+                    {q.required && !isDisabled && <span className="text-[#D11D21] ml-1 shrink-0 select-none">*</span>}
+                    {isDisabled && (
+                      <span className="ml-2 text-xs font-normal text-white/60 bg-white/10 px-2 py-0.5 rounded-[4px] select-none border border-white/10">
+                        Archived
+                      </span>
+                    )}
                   </FormLabel>
                 </>
               )}

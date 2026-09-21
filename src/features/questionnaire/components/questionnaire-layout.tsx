@@ -36,7 +36,7 @@ export const QuestionnaireLayout = ({
   const serverUnlockedStep = isServerComplete
     ? totalSteps + 1
     : serverCompletedSubsteps.length > 0
-      ? Math.max(...serverCompletedSubsteps) + 1
+      ? serverCompletedSubsteps.length + 1
       : typeof questionnaire?.currentSubstep === "number" && questionnaire.currentSubstep > 0
         ? questionnaire.currentSubstep
         : 1;

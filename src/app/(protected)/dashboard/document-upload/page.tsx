@@ -24,7 +24,19 @@ interface DynamicDocItem {
   title: string;
   description?: string | null;
   required?: boolean;
+  isArchived?: boolean;
 }
+
+const isDocArchived = (doc: any): boolean => {
+  if (!doc) return false;
+  return Boolean(
+    doc.isArchived === true ||
+    doc.archived === true ||
+    doc.is_archived === true ||
+    doc.isArchived === "true" ||
+    doc.archived === "true"
+  );
+};
 
 const DEFAULT_DOCUMENTS: DynamicDocItem[] = [
   { id: "tax_return", code: "tax_return", title: "Most recent tax return", description: "Upload your most recent tax return document", required: true },
@@ -125,6 +137,7 @@ export default function DocumentUploadPage() {
         title: doc.title || "Document",
         description: doc.description || null,
         required: doc.required !== false,
+        isArchived: isDocArchived(doc),
       }));
   }, [rawData, onboardingData, docRequirementsResponse, savedAnswersMap]);
 
@@ -144,15 +157,17 @@ export default function DocumentUploadPage() {
     return map;
   }, [localUploadedDocuments, onboardingData]);
 
-  const numUploaded = documents.filter(
+  const activeDocuments = useMemo(() => documents.filter((doc) => !doc.isArchived), [documents]);
+
+  const numUploaded = activeDocuments.filter(
     (doc) => !!(uploadedMap[doc.id] || (doc.code && uploadedMap[doc.code]))
   ).length;
 
-  const requiredDocs = documents.filter((doc) => doc.required !== false);
+  const requiredDocs = activeDocuments.filter((doc) => doc.required !== false);
   const isAllUploaded =
     (requiredDocs.length > 0
       ? requiredDocs.every((doc) => !!(uploadedMap[doc.id] || (doc.code && uploadedMap[doc.code])))
-      : documents.length > 0 && numUploaded === documents.length) ||
+      : activeDocuments.length > 0 && numUploaded >= activeDocuments.length) ||
     onboardingData?.documentUpload?.status === "completed";
 
   const isAnyDocUploading = Object.values(uploadingDocs).some(Boolean);
@@ -162,6 +177,8 @@ export default function DocumentUploadPage() {
   }
 
   const handleDocClick = (id: string) => {
+    const doc = documents.find((d) => d.id === id || (d.code && d.code === id));
+    if (doc?.isArchived) return;
     setSelectedDocId(id);
     setStagedFile(null);
   };
@@ -285,7 +302,10 @@ export default function DocumentUploadPage() {
           <div className="flex flex-col items-center">
             {selectedDocId ? (
               <>
-                <h1 className="text-white font-semibold text-[40px] leading-[60px] tracking-[-0.025em] text-center">
+                <h1
+                  className="text-white font-semibold text-[32px] md:text-[40px] leading-[1.2] tracking-[-0.025em] text-center break-words max-w-full px-4"
+                  style={{ overflowWrap: "anywhere" }}
+                >
                   {selectedDoc?.title}
                 </h1>
                 <p className="text-[#E0E0E0] font-normal text-[16px] leading-[140%] text-center mt-[10px]">
@@ -305,7 +325,7 @@ export default function DocumentUploadPage() {
                 <div className="w-[513px] max-w-full mt-[30px] flex flex-col gap-[10px]">
                   {/* Progress Lines */}
                   <div className="flex justify-between items-center gap-[8px] w-full">
-                    {documents.map((doc, idx) => (
+                    {activeDocuments.map((doc, idx) => (
                       <div
                         key={doc.id || idx}
                         className={cn(
@@ -319,7 +339,7 @@ export default function DocumentUploadPage() {
                   {/* Progress Text */}
                   <div className="flex justify-between items-center w-full">
                     <span className="text-[#DDEBF8] font-medium text-[14px] leading-[21px] tracking-[-0.01em]">
-                      Document {numUploaded} of {documents.length} Uploaded
+                      Document {Math.min(numUploaded, activeDocuments.length)} of {activeDocuments.length} Uploaded
                     </span>
                   </div>
                 </div>
@@ -355,11 +375,11 @@ export default function DocumentUploadPage() {
               {/* Tap to upload area */}
               <div
                 onClick={() => {
-                  if (!isCurrentDocUploading) fileInputRef.current?.click();
+                  if (!isCurrentDocUploading && !selectedDoc?.isArchived) fileInputRef.current?.click();
                 }}
                 className={cn(
                   "w-full h-[200px] border-[2px] border-dashed border-[#5B8EDC] bg-[rgba(255,255,255,0.05)] rounded-[17px] flex flex-col items-center justify-center transition-colors",
-                  isCurrentDocUploading
+                  isCurrentDocUploading || selectedDoc?.isArchived
                     ? "opacity-60 cursor-not-allowed"
                     : "cursor-pointer hover:bg-[rgba(255,255,255,0.1)]"
                 )}
@@ -391,24 +411,31 @@ export default function DocumentUploadPage() {
                   className="hidden"
                   onChange={handleFileSelect}
                   accept=".pdf,.jpg,.jpeg,.png"
-                  disabled={isCurrentDocUploading}
+                  disabled={isCurrentDocUploading || selectedDoc?.isArchived}
                 />
               </div>
 
               {displayFilename && (
                 <>
                   {/* Selected/Uploaded File Card */}
-                  <div className="w-full h-[78px] bg-white rounded-[17px] flex items-center justify-between px-[22px]">
-                    <div className="flex items-center gap-[12px]">
-                      <div className="w-[34px] h-[34px] bg-gradient-to-br from-[#2186FF] to-[rgba(33,134,255,0.15)] rounded-[10px] flex items-center justify-center">
+                  <div className="w-full min-h-[78px] py-3.5 bg-white rounded-[17px] flex items-center justify-between px-[22px] gap-3">
+                    <div className="flex items-center gap-[12px] min-w-0 flex-1">
+                      <div className="w-[34px] h-[34px] shrink-0 bg-gradient-to-br from-[#2186FF] to-[rgba(33,134,255,0.15)] rounded-[10px] flex items-center justify-center">
                         <FileText className="w-[16px] h-[16px] text-white" />
                       </div>
 
-                      <div className="flex flex-col justify-center gap-[2px]">
-                        <span className="font-medium text-[12px] leading-[18px] tracking-[-0.01em] text-[#2A2A2A]">
+                      <div className="flex flex-col justify-center gap-[2px] min-w-0 flex-1">
+                        <span
+                          title={selectedDoc?.title}
+                          className="font-medium text-[12px] leading-[18px] tracking-[-0.01em] text-[#2A2A2A] break-words line-clamp-2"
+                          style={{ overflowWrap: "anywhere" }}
+                        >
                           {selectedDoc?.title}
                         </span>
-                        <span className="font-medium text-[10px] leading-[15px] tracking-[-0.01em] text-[#525252] max-w-[280px] truncate">
+                        <span
+                          title={displayFilename || undefined}
+                          className="font-medium text-[10px] leading-[15px] tracking-[-0.01em] text-[#525252] truncate block"
+                        >
                           {displayFilename}
                         </span>
                       </div>
@@ -417,7 +444,7 @@ export default function DocumentUploadPage() {
                     <button
                       onClick={() => setShowRemoveDialog(true)}
                       disabled={isCurrentDocUploading}
-                      className="w-[24px] h-[24px] rounded-full bg-[rgba(209,29,33,0.1)] flex items-center justify-center hover:bg-[rgba(209,29,33,0.2)] transition disabled:opacity-50"
+                      className="w-[24px] h-[24px] shrink-0 rounded-full bg-[rgba(209,29,33,0.1)] flex items-center justify-center hover:bg-[rgba(209,29,33,0.2)] transition disabled:opacity-50"
                     >
                       <X className="w-3.5 h-3.5 text-[#D11D21]" strokeWidth={3} />
                     </button>
@@ -427,7 +454,7 @@ export default function DocumentUploadPage() {
                   {stagedFile && (
                     <button
                       onClick={handleUploadSubmit}
-                      disabled={isCurrentDocUploading}
+                      disabled={isCurrentDocUploading || selectedDoc?.isArchived}
                       className="w-full h-[42px] bg-gradient-to-br from-[#2186FF] to-[#01152D] rounded-[96px] flex items-center justify-center mt-[10px] hover:opacity-90 transition shadow-lg disabled:opacity-60"
                     >
                       {isCurrentDocUploading ? (
@@ -451,61 +478,88 @@ export default function DocumentUploadPage() {
                 const isUploaded = !!(uploadedMap[doc.id] || (doc.code && uploadedMap[doc.code]));
                 const filename = uploadedMap[doc.id] || (doc.code ? uploadedMap[doc.code] : null);
                 const isDocUploading = !!(uploadingDocs[doc.id] || (doc.code && uploadingDocs[doc.code]));
+                const isArchived = !!doc.isArchived;
 
                 return (
                   <div
                     key={doc.id}
-                    onClick={() => handleDocClick(doc.id)}
-                    className="w-full h-[78px] bg-white rounded-[17px] cursor-pointer hover:shadow-lg transition flex items-center justify-between px-[22px]"
+                    onClick={() => {
+                      if (!isArchived) {
+                        handleDocClick(doc.id);
+                      }
+                    }}
+                    className={cn(
+                      "w-full min-h-[78px] py-3.5 bg-white rounded-[17px] transition flex items-center justify-between px-[22px] gap-3",
+                      isArchived
+                        ? "opacity-55 cursor-not-allowed bg-white/80 select-none shadow-none"
+                        : "cursor-pointer hover:shadow-lg"
+                    )}
                   >
-                    <div className="flex items-center gap-[12px]">
+                    <div className="flex items-center gap-[12px] min-w-0 flex-1">
                       <div
                         className={cn(
-                          "w-[34px] h-[34px] rounded-[10px] flex items-center justify-center",
-                          isDocUploading
-                            ? "bg-[#2186FF]/10 text-[#2186FF]"
-                            : isUploaded
-                            ? "bg-gradient-to-br from-[#2186FF] to-[rgba(33,134,255,0.15)] text-white"
-                            : "bg-gray-100 text-gray-400"
+                          "w-[34px] h-[34px] shrink-0 rounded-[10px] flex items-center justify-center",
+                          isArchived
+                            ? "bg-gray-100 text-gray-400"
+                            : isDocUploading
+                              ? "bg-[#2186FF]/10 text-[#2186FF]"
+                              : isUploaded
+                                ? "bg-gradient-to-br from-[#2186FF] to-[rgba(33,134,255,0.15)] text-white"
+                                : "bg-gray-100 text-gray-400"
                         )}
                       >
                         {isDocUploading ? (
                           <Loader2 className="w-[18px] h-[18px] animate-spin text-[#2186FF]" />
                         ) : (
                           <FileText
-                            className={cn("w-[16px] h-[16px]", isUploaded ? "text-white" : "text-gray-400")}
+                            className={cn("w-[16px] h-[16px]", !isArchived && isUploaded ? "text-white" : "text-gray-400")}
                           />
                         )}
                       </div>
 
-                      <div className="flex flex-col justify-center gap-[2px]">
-                        <span className="font-medium text-[12px] leading-[18px] tracking-[-0.01em] text-[#2A2A2A] flex items-center gap-1.5">
+                      <div className="flex flex-col justify-center gap-[2px] min-w-0 flex-1">
+                        <span
+                          title={doc.title}
+                          className="font-medium text-[12px] leading-[18px] tracking-[-0.01em] text-[#2A2A2A] break-words line-clamp-2"
+                          style={{ overflowWrap: "anywhere" }}
+                        >
                           {doc.title}
-                          {doc.required === false && (
-                            <span className="text-[10px] text-[#71717A] font-normal">(Optional)</span>
-                          )}
+                          {isArchived ? (
+                            <span className="text-[10px] text-[#8E8E93] font-normal ml-1.5 shrink-0 inline-block">(Disabled)</span>
+                          ) : doc.required === false ? (
+                            <span className="text-[10px] text-[#71717A] font-normal ml-1.5 shrink-0 inline-block">(Optional)</span>
+                          ) : null}
                         </span>
-                        <span className="font-medium text-[10px] leading-[15px] tracking-[-0.01em] text-[#525252] max-w-[250px] truncate">
+                        <span
+                          title={isUploaded ? filename || undefined : isArchived ? "Archived" : doc.description || undefined}
+                          className="font-medium text-[10px] leading-[15px] tracking-[-0.01em] text-[#525252] truncate block"
+                        >
                           {isDocUploading
                             ? "Uploading document..."
                             : isUploaded
-                            ? filename
-                            : doc.description || "Not Uploaded"}
+                              ? filename
+                              : isArchived
+                                ? "Archived"
+                                : doc.description || "Not Uploaded"}
                         </span>
                       </div>
                     </div>
 
                     <span
                       className={cn(
-                        "font-medium text-[12px] leading-[18px] tracking-[-0.01em]",
-                        isDocUploading
-                          ? "text-[#2186FF] flex items-center gap-1.5"
-                          : isUploaded
-                          ? "text-[#289F2C]"
-                          : "text-[#2A2A2A]"
+                        "font-medium text-[12px] leading-[18px] tracking-[-0.01em] shrink-0",
+                        isArchived
+                          ? "text-[#8E8E93]"
+                          : isDocUploading
+                            ? "text-[#2186FF] flex items-center gap-1.5"
+                            : isUploaded
+                              ? "text-[#289F2C]"
+                              : "text-[#2A2A2A]"
                       )}
                     >
-                      {isDocUploading ? (
+                      {isArchived ? (
+                        "Disabled"
+                      ) : isDocUploading ? (
                         <>
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
                           Uploading...

@@ -11,30 +11,54 @@ import { ClipboardList, HelpCircle, RotateCw } from "lucide-react";
 
 import { useProgressStore } from "../store/progress.store";
 
+const isQuestionArchived = (q: any): boolean => {
+  if (!q) return false;
+  return Boolean(
+    q.isArchived === true ||
+    q.archived === true ||
+    q.is_archived === true ||
+    q.isArchived === "true" ||
+    q.archived === "true"
+  );
+};
+
 const DynamicQuestionnaireContent = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const stepParam = searchParams.get("step");
-  
+
   const { data: questionsResponse, isLoading: isLoadingQuestions, refetch: refetchQuestions } = useQuestions();
   const { data: progressResponse, isLoading: isLoadingProgress } = useOnboardingProgress();
   const completeMutation = useCompleteQuestionnaireStep();
   const draftMutation = useSaveQuestionnaireDraft();
-  
+
   const isLoading = isLoadingQuestions || isLoadingProgress;
-  
+
   const rawQuestionsData = questionsResponse?.data;
-  const substeps: QuestionnaireSubstep[] = Array.isArray(rawQuestionsData)
-    ? rawQuestionsData
-    : Array.isArray(rawQuestionsData?.substeps)
-      ? rawQuestionsData.substeps
-      : Array.isArray(rawQuestionsData?.questions)
-        ? rawQuestionsData.questions
-        : [];
+
+  // Filter substeps to only those that are active and contain at least one non-archived question
+  const substeps: QuestionnaireSubstep[] = useMemo(() => {
+    const rawList: QuestionnaireSubstep[] = Array.isArray(rawQuestionsData)
+      ? rawQuestionsData
+      : Array.isArray(rawQuestionsData?.substeps)
+        ? rawQuestionsData.substeps
+        : Array.isArray(rawQuestionsData?.questions)
+          ? rawQuestionsData.questions
+          : [];
+
+    return rawList
+      .filter((step) => {
+        if (step.isActive === false) return false;
+        if (!Array.isArray(step.questions) || step.questions.length === 0) return false;
+        return step.questions.some((q) => !isQuestionArchived(q));
+      })
+      .sort((a, b) => (a.order ?? a.stepNumber ?? 0) - (b.order ?? b.stepNumber ?? 0));
+  }, [rawQuestionsData]);
 
   const maxStep = substeps.length;
-  const currentStep = stepParam ? parseInt(stepParam, 10) : 1;
-  const activeSubstep = substeps.find(s => (s.stepNumber ?? s.substepNumber) === currentStep) || substeps[0];
+  const rawStepParam = stepParam ? parseInt(stepParam, 10) : 1;
+  const currentStep = maxStep > 0 ? Math.min(Math.max(1, isNaN(rawStepParam) ? 1 : rawStepParam), maxStep) : 1;
+  const activeSubstep = substeps[currentStep - 1];
 
   const totalQuestionsCount = substeps.reduce((acc, step) => {
     return acc + (Array.isArray(step.questions) ? step.questions.length : 0);
@@ -103,8 +127,8 @@ const DynamicQuestionnaireContent = () => {
       : typeof rawCompleted === "number"
         ? [rawCompleted]
         : [];
-    const lastCompleted = completedList.length > 0 
-      ? Math.max(...completedList) 
+    const lastCompleted = completedList.length > 0
+      ? Math.max(...completedList)
       : Math.max(0, currentStepNumber - 1);
 
     draftMutation.mutate({
@@ -123,10 +147,10 @@ const DynamicQuestionnaireContent = () => {
     return (
       <QuestionnaireLayout currentStep={currentStep} totalSteps={maxStep || 4}>
         <div className="w-[90%] lg:w-[80%] mt-[30px] z-10 flex flex-col gap-[30px]">
-           <Skeleton className="w-1/3 h-[40px] rounded-[7px] bg-white/10" />
-           <div className="grid grid-cols-1 md:grid-cols-3 gap-x-[30px] gap-y-[30px] w-full">
-             {[1,2,3,4,5,6].map(i => <Skeleton key={i} className="w-full h-[70px] rounded-[7px] bg-white/10" />)}
-           </div>
+          <Skeleton className="w-1/3 h-[40px] rounded-[7px] bg-white/10" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-x-[30px] gap-y-[30px] w-full">
+            {[1, 2, 3, 4, 5, 6].map(i => <Skeleton key={i} className="w-full h-[70px] rounded-[7px] bg-white/10" />)}
+          </div>
         </div>
       </QuestionnaireLayout>
     );
@@ -197,7 +221,10 @@ const DynamicQuestionnaireContent = () => {
             </button>
             {currentStep < maxStep && (
               <button
-                onClick={() => router.push(`/dashboard/questionnaire/form?step=${currentStep + 1}`)}
+                onClick={() => {
+                  useProgressStore.getState().unlockStep(currentStep + 1);
+                  router.push(`/dashboard/questionnaire/form?step=${currentStep + 1}`);
+                }}
                 className="px-5 py-2.5 rounded-full bg-white/15 hover:bg-white/20 border border-white/20 text-white text-sm font-medium transition cursor-pointer"
               >
                 Next Step
@@ -214,11 +241,11 @@ const DynamicQuestionnaireContent = () => {
       <div className="mt-[50px] text-[#FFFFFF] font-medium text-[14px] leading-[21px] tracking-[-0.01em] uppercase z-10">
         {activeSubstep.stepName || activeSubstep.title}
       </div>
-      <DynamicFormRenderer 
+      <DynamicFormRenderer
         key={currentStepNumber}
-        questions={activeSubstep.questions} 
+        questions={activeSubstep.questions}
         initialValues={savedAnswersMap}
-        onComplete={handleComplete} 
+        onComplete={handleComplete}
         onSaveDraft={handleSaveDraft}
         isSubmitting={completeMutation.isPending}
       />

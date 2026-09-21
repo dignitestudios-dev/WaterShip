@@ -49,7 +49,7 @@ export const QuestionnaireIntro = () => {
   const startStepNumber = isServerComplete
     ? 1
     : completedCount > 0
-      ? Math.max(...serverCompletedSubsteps) + 1
+      ? completedCount + 1
       : currentSubstep > 1
         ? currentSubstep
         : 1;

@@ -50,6 +50,8 @@ export interface QuestionnaireQuestion {
   options?: (string | QuestionnaireOption)[];
   hintText?: string | null;
   conditionalLogic?: QuestionnaireConditionalLogic[];
+  isActive?: boolean;
+  isArchived?: boolean;
 }
 
 export interface QuestionnaireSubstep {
@@ -61,6 +63,8 @@ export interface QuestionnaireSubstep {
   substepNumber?: number;
   description?: string;
   questions: QuestionnaireQuestion[];
+  isActive?: boolean;
+  isArchived?: boolean;
 }
 
 export interface QuestionnaireAnswer {
@@ -107,6 +111,7 @@ export interface DocumentRequirement {
   required?: boolean;
   order?: number;
   isActive?: boolean;
+  isArchived?: boolean;
   isDeleted?: boolean;
   deletedAt?: string | null;
   isConditional?: boolean;
