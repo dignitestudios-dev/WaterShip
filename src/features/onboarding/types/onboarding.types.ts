@@ -89,7 +89,8 @@ export type DocumentCategory =
   | "tax_return"
   | "investment_statements"
   | "insurance_policies"
-  | "estate_trust_docs";
+  | "estate_trust_docs"
+  | string;
 
 export interface DocumentUploadPayload {
   file: File | Blob;
@@ -98,9 +99,23 @@ export interface DocumentUploadPayload {
 }
 
 export interface DocumentRequirement {
+  _id?: string;
+  id?: string;
   code: string;
   title: string;
-  required: boolean;
+  description?: string | null;
+  required?: boolean;
+  order?: number;
+  isActive?: boolean;
+  isDeleted?: boolean;
+  deletedAt?: string | null;
+  isConditional?: boolean;
+  triggerCondition?: {
+    questionId: string;
+    triggerValue: any;
+  } | null;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface BookAppointmentPayload {

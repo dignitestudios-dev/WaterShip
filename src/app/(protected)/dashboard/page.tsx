@@ -45,7 +45,11 @@ function DashboardContent() {
   // Step 3: Document Upload
   const uploadedDocuments = onboardingData?.documentUpload?.uploadedDocuments || [];
   const uploadedCount = onboardingData?.documentUpload?.uploadedCount ?? uploadedDocuments.length;
-  const totalRequiredDocs = onboardingData?.documentUpload?.totalRequiredCount || 4;
+  const totalRequiredDocs =
+    onboardingData?.documentUpload?.totalRequiredCount ||
+    onboardingData?.documentRequirements?.length ||
+    rawData?.documentRequirements?.length ||
+    4;
   const isDocumentUploadCompleted =
     onboardingData?.documentUpload?.status === "completed" ||
     (uploadedCount >= totalRequiredDocs && totalRequiredDocs > 0);
@@ -58,7 +62,7 @@ function DashboardContent() {
     ? `${totalRequiredDocs} of ${totalRequiredDocs} steps completed`
     : isRiskAssessmentCompleted
       ? `${uploadedCount} of ${totalRequiredDocs} steps completed`
-      : "0 of 4 steps completed";
+      : `0 of ${totalRequiredDocs} steps completed`;
 
   // Step 4: Appointment Booking
   const isAppointmentBooked =

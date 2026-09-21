@@ -12,23 +12,32 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
   useOnboardingProgress,
   useCompleteDocumentUpload,
+  useDocumentRequirements,
 } from "@/features/onboarding/api/onboarding.queries";
 import { uploadDocument } from "@/features/onboarding/api/onboarding.api";
 import { DocumentCategory } from "@/features/onboarding/types/onboarding.types";
 import { getApiErrorMessage } from "@/lib/api-response";
 
-const DOCUMENTS: { id: DocumentCategory; title: string }[] = [
-  { id: "tax_return", title: "Most recent tax return" },
-  { id: "investment_statements", title: "Investment account statements" },
-  { id: "insurance_policies", title: "Insurance policies" },
-  { id: "estate_trust_docs", title: "Estate/ trust documents" },
+interface DynamicDocItem {
+  id: string;
+  code: string;
+  title: string;
+  description?: string | null;
+  required?: boolean;
+}
+
+const DEFAULT_DOCUMENTS: DynamicDocItem[] = [
+  { id: "tax_return", code: "tax_return", title: "Most recent tax return", description: "Upload your most recent tax return document", required: true },
+  { id: "investment_statements", code: "investment_statements", title: "Investment account statements", description: "Upload your recent investment account statements", required: true },
+  { id: "insurance_policies", code: "insurance_policies", title: "Insurance policies", description: "Upload active insurance policy documents", required: true },
+  { id: "estate_trust_docs", code: "estate_trust_docs", title: "Estate/ trust documents", description: "Upload estate or trust documentation", required: true },
 ];
 
 export default function DocumentUploadPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [mounted, setMounted] = useState(false);
-  const [selectedDocId, setSelectedDocId] = useState<DocumentCategory | null>(null);
+  const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
   const [stagedFile, setStagedFile] = useState<File | null>(null);
   const [showRemoveDialog, setShowRemoveDialog] = useState(false);
   const [uploadingDocs, setUploadingDocs] = useState<Record<string, boolean>>({});
@@ -38,7 +47,8 @@ export default function DocumentUploadPage() {
     setMounted(true);
   }, []);
 
-  const { data: progressResponse } = useOnboardingProgress();
+  const { data: progressResponse, isLoading: isLoadingProgress } = useOnboardingProgress();
+  const { data: docRequirementsResponse } = useDocumentRequirements();
   const completeMutation = useCompleteDocumentUpload();
 
   const rawData: any = progressResponse?.data;
@@ -53,13 +63,78 @@ export default function DocumentUploadPage() {
     onboardingData?.riskAssessment?.status === "completed" || isRiskAssessmentStore;
   const isLocked = !isRiskAssessmentCompleted;
 
+  // Answers map for conditional requirements
+  const savedAnswersMap = useMemo(() => {
+    const map: Record<string, any> = {};
+    const savedAnswersList =
+      onboardingData?.questionnaire?.answers ||
+      rawData?.questionnaire?.answers ||
+      [];
+    if (!Array.isArray(savedAnswersList)) return map;
+
+    const extract = (item: any) => {
+      if (!item || !item.questionId) return;
+      map[item.questionId] = item.value;
+      if (Array.isArray(item.conditionalAnswers)) {
+        item.conditionalAnswers.forEach(extract);
+      }
+    };
+
+    savedAnswersList.forEach(extract);
+    return map;
+  }, [onboardingData, rawData]);
+
+  // Determine dynamic documents list from API
+  const documents: DynamicDocItem[] = useMemo(() => {
+    const rawRequirements =
+      rawData?.documentRequirements ||
+      onboardingData?.documentRequirements ||
+      rawData?.data?.documentRequirements ||
+      docRequirementsResponse?.data ||
+      (docRequirementsResponse as any)?.documentRequirements;
+
+    if (!Array.isArray(rawRequirements) || rawRequirements.length === 0) {
+      return DEFAULT_DOCUMENTS;
+    }
+
+    return rawRequirements
+      .filter((doc: any) => {
+        // Exclude deactivated or deleted
+        if (doc.isActive === false || doc.isDeleted === true) return false;
+
+        // Check conditional logic if present
+        if (doc.isConditional && doc.triggerCondition?.questionId) {
+          const answer = savedAnswersMap[doc.triggerCondition.questionId];
+          const triggerVal = doc.triggerCondition.triggerValue;
+          if (triggerVal !== undefined && triggerVal !== null) {
+            const answerStr = String(answer ?? "").trim().toLowerCase();
+            const triggerStr = String(triggerVal).trim().toLowerCase();
+            if (Array.isArray(answer)) {
+              return answer.some((a) => String(a).trim().toLowerCase() === triggerStr);
+            }
+            return answerStr === triggerStr;
+          }
+        }
+
+        return true;
+      })
+      .sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0))
+      .map((doc: any) => ({
+        id: (doc.code || doc._id || doc.id) as string,
+        code: (doc.code || doc._id || doc.id) as string,
+        title: doc.title || "Document",
+        description: doc.description || null,
+        required: doc.required !== false,
+      }));
+  }, [rawData, onboardingData, docRequirementsResponse, savedAnswersMap]);
+
   // Sync backend uploaded documents with local store mapping
   const uploadedMap = useMemo(() => {
     const map: Record<string, string> = { ...localUploadedDocuments };
     const backendDocs = onboardingData?.documentUpload?.uploadedDocuments;
     if (Array.isArray(backendDocs)) {
       backendDocs.forEach((doc: any) => {
-        const type = doc.type || doc.docType || doc.code || doc.id;
+        const type = doc.type || doc.docType || doc.code || doc.requirementCode || doc.id;
         const name = doc.fileName || doc.name || doc.originalName || "Uploaded Document";
         if (type) {
           map[type] = name;
@@ -69,23 +144,37 @@ export default function DocumentUploadPage() {
     return map;
   }, [localUploadedDocuments, onboardingData]);
 
-  const numUploaded = DOCUMENTS.filter((doc) => !!uploadedMap[doc.id]).length;
+  const numUploaded = documents.filter(
+    (doc) => !!(uploadedMap[doc.id] || (doc.code && uploadedMap[doc.code]))
+  ).length;
+
+  const requiredDocs = documents.filter((doc) => doc.required !== false);
   const isAllUploaded =
-    numUploaded === DOCUMENTS.length || onboardingData?.documentUpload?.status === "completed";
+    (requiredDocs.length > 0
+      ? requiredDocs.every((doc) => !!(uploadedMap[doc.id] || (doc.code && uploadedMap[doc.code])))
+      : documents.length > 0 && numUploaded === documents.length) ||
+    onboardingData?.documentUpload?.status === "completed";
+
   const isAnyDocUploading = Object.values(uploadingDocs).some(Boolean);
 
-  if (!mounted) {
+  if (!mounted || (isLoadingProgress && documents.length === 0)) {
     return <div className="w-full min-h-screen bg-gradient-to-b from-[#034593] to-[#01152D]" />;
   }
 
-  const handleDocClick = (id: DocumentCategory) => {
+  const handleDocClick = (id: string) => {
     setSelectedDocId(id);
     setStagedFile(null);
   };
 
-  const selectedDoc = DOCUMENTS.find((d) => d.id === selectedDocId);
-  const isCurrentDocUploading = !!(selectedDocId && uploadingDocs[selectedDocId]);
-  const currentlyUploadedFilename = selectedDocId ? uploadedMap[selectedDocId] : null;
+  const selectedDoc = documents.find(
+    (d) => d.id === selectedDocId || (d.code && d.code === selectedDocId)
+  );
+  const isCurrentDocUploading = !!(
+    selectedDocId && (uploadingDocs[selectedDocId] || (selectedDoc?.code && uploadingDocs[selectedDoc.code]))
+  );
+  const currentlyUploadedFilename = selectedDocId
+    ? uploadedMap[selectedDocId] || (selectedDoc?.code ? uploadedMap[selectedDoc.code] : null)
+    : null;
   const displayFilename = stagedFile ? stagedFile.name : currentlyUploadedFilename;
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -121,11 +210,15 @@ export default function DocumentUploadPage() {
       const data = await uploadDocument({
         file,
         fileName,
-        type: docId,
+        type: selectedDoc?.code || docId,
       });
 
       setDocumentUploaded(docId, fileName);
+      if (selectedDoc?.code && selectedDoc.code !== docId) {
+        setDocumentUploaded(selectedDoc.code, fileName);
+      }
       queryClient.invalidateQueries({ queryKey: ["onboarding", "progress"] });
+      queryClient.invalidateQueries({ queryKey: ["onboarding", "document-requirements"] });
       toast.success(data?.message || "Document uploaded successfully");
 
       setSelectedDocId((current) => {
@@ -149,8 +242,9 @@ export default function DocumentUploadPage() {
 
   const handleRemoveConfirm = () => {
     if (selectedDocId) {
-      if (currentlyUploadedFilename) {
-        removeDocument(selectedDocId);
+      removeDocument(selectedDocId);
+      if (selectedDoc?.code) {
+        removeDocument(selectedDoc.code);
       }
       setStagedFile(null);
       setShowRemoveDialog(false);
@@ -195,7 +289,7 @@ export default function DocumentUploadPage() {
                   {selectedDoc?.title}
                 </h1>
                 <p className="text-[#E0E0E0] font-normal text-[16px] leading-[140%] text-center mt-[10px]">
-                  Encrypted upload. Only your advisor can view these.
+                  {selectedDoc?.description || "Encrypted upload. Only your advisor can view these."}
                 </p>
               </>
             ) : (
@@ -211,12 +305,12 @@ export default function DocumentUploadPage() {
                 <div className="w-[513px] max-w-full mt-[30px] flex flex-col gap-[10px]">
                   {/* Progress Lines */}
                   <div className="flex justify-between items-center gap-[8px] w-full">
-                    {[1, 2, 3, 4].map((step) => (
+                    {documents.map((doc, idx) => (
                       <div
-                        key={step}
+                        key={doc.id || idx}
                         className={cn(
                           "flex-1 border-[2px] rounded-full",
-                          step <= numUploaded ? "border-white" : "border-[#E0E0E0] opacity-45"
+                          idx < numUploaded ? "border-white" : "border-[#E0E0E0] opacity-45"
                         )}
                       />
                     ))}
@@ -225,7 +319,7 @@ export default function DocumentUploadPage() {
                   {/* Progress Text */}
                   <div className="flex justify-between items-center w-full">
                     <span className="text-[#DDEBF8] font-medium text-[14px] leading-[21px] tracking-[-0.01em]">
-                      Document {numUploaded} of 4 Uploaded
+                      Document {numUploaded} of {documents.length} Uploaded
                     </span>
                   </div>
                 </div>
@@ -353,10 +447,10 @@ export default function DocumentUploadPage() {
             </div>
           ) : (
             <div className="mt-[50px] w-full max-w-[487px] flex flex-col gap-[10px]">
-              {DOCUMENTS.map((doc) => {
-                const isUploaded = !!uploadedMap[doc.id];
-                const filename = uploadedMap[doc.id];
-                const isDocUploading = !!uploadingDocs[doc.id];
+              {documents.map((doc) => {
+                const isUploaded = !!(uploadedMap[doc.id] || (doc.code && uploadedMap[doc.code]));
+                const filename = uploadedMap[doc.id] || (doc.code ? uploadedMap[doc.code] : null);
+                const isDocUploading = !!(uploadingDocs[doc.id] || (doc.code && uploadingDocs[doc.code]));
 
                 return (
                   <div
@@ -385,15 +479,18 @@ export default function DocumentUploadPage() {
                       </div>
 
                       <div className="flex flex-col justify-center gap-[2px]">
-                        <span className="font-medium text-[12px] leading-[18px] tracking-[-0.01em] text-[#2A2A2A]">
+                        <span className="font-medium text-[12px] leading-[18px] tracking-[-0.01em] text-[#2A2A2A] flex items-center gap-1.5">
                           {doc.title}
+                          {doc.required === false && (
+                            <span className="text-[10px] text-[#71717A] font-normal">(Optional)</span>
+                          )}
                         </span>
                         <span className="font-medium text-[10px] leading-[15px] tracking-[-0.01em] text-[#525252] max-w-[250px] truncate">
                           {isDocUploading
                             ? "Uploading document..."
                             : isUploaded
                             ? filename
-                            : "Not Uploaded"}
+                            : doc.description || "Not Uploaded"}
                         </span>
                       </div>
                     </div>
