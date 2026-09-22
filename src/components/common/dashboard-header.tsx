@@ -3,21 +3,25 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { Bell } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { getCookie } from "@/lib/cookie";
 import { useGetMe } from "@/features/users/api/users.queries";
 import { useUnreadNotificationCount } from "@/features/notification";
 
 export const DashboardHeader = () => {
   const router = useRouter();
+  const pathname = usePathname();
   const [hasToken, setHasToken] = useState(false);
 
   useEffect(() => {
     setHasToken(!!getCookie("token"));
   }, []);
 
-  const { data: getMeResponse, isLoading } = useGetMe({ enabled: hasToken });
-  const { data: unreadResponse } = useUnreadNotificationCount();
+  const isPublicPage = pathname === "/terms" || pathname === "/privacy";
+  const shouldFetch = hasToken && !isPublicPage;
+
+  const { data: getMeResponse, isLoading } = useGetMe({ enabled: shouldFetch });
+  const { data: unreadResponse } = useUnreadNotificationCount({ enabled: shouldFetch });
 
   const unreadCount = typeof unreadResponse?.data === "number"
     ? unreadResponse.data

@@ -15,11 +15,12 @@ export const useMyNotifications = (page = 1, limit = 10) => {
   });
 };
 
-export const useUnreadNotificationCount = () => {
+export const useUnreadNotificationCount = (options?: { enabled?: boolean }) => {
   return useQuery({
     queryKey: NOTIFICATION_QUERY_KEYS.unreadCount(),
     queryFn: getUnreadNotificationCount,
     refetchInterval: 30000, // Refetch every 30 seconds for real-time counts
+    ...options,
   });
 };
 

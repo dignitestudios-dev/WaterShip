@@ -55,7 +55,13 @@ api.interceptors.response.use(
   (error: AxiosError) => {
     if (error.response?.status === 401) {
       clearAuthSession();
-      if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login") && !window.location.pathname.startsWith("/verify-email")) {
+      if (
+        typeof window !== "undefined" &&
+        !window.location.pathname.startsWith("/login") &&
+        !window.location.pathname.startsWith("/verify-email") &&
+        !window.location.pathname.startsWith("/terms") &&
+        !window.location.pathname.startsWith("/privacy")
+      ) {
         window.location.href = "/login";
       }
     }

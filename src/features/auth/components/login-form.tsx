@@ -168,8 +168,8 @@ export const LoginForm = () => {
 
       <p className="mt-10 text-center font-normal text-[14px] leading-[140%] text-[#E0E0E0]">
         By clicking sign in you agreed to our{" "}
-        <Link href="/terms" className="font-semibold underline hover:text-white transition-colors">terms of use</Link> &{" "}
-        <Link href="/privacy" className="font-semibold underline hover:text-white transition-colors">privacy policy</Link>.
+        <Link href="/terms" target="_blank" rel="noopener noreferrer" className="font-semibold underline hover:text-white transition-colors">Terms of Use</Link> &{" "}
+        <Link href="/privacy" target="_blank" rel="noopener noreferrer" className="font-semibold underline hover:text-white transition-colors">Privacy Policy</Link>.
       </p>
     </div>
   );

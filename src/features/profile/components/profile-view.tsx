@@ -217,24 +217,24 @@ export const ProfileView = () => {
               <div className="flex flex-col gap-[15px] mt-[5px] w-full">
                 <div className="w-full border-t border-white/15" />
                 <div className="flex flex-col gap-[10px]">
-                  <span 
-                    className="font-medium text-[14px] leading-[21px] tracking-[-0.01em] text-[#E0E0E0] cursor-pointer hover:text-white transition-colors"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      router.push("/privacy");
-                    }}
+                  <a 
+                    href="/privacy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium text-[14px] leading-[21px] tracking-[-0.01em] text-[#E0E0E0] cursor-pointer hover:text-white transition-colors block"
+                    onClick={(e) => e.stopPropagation()}
                   >
                     Privacy Policy
-                  </span>
-                  <span 
-                    className="font-medium text-[14px] leading-[21px] tracking-[-0.01em] text-[#E0E0E0] cursor-pointer hover:text-white transition-colors"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      router.push("/terms");
-                    }}
+                  </a>
+                  <a 
+                    href="/terms"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium text-[14px] leading-[21px] tracking-[-0.01em] text-[#E0E0E0] cursor-pointer hover:text-white transition-colors block"
+                    onClick={(e) => e.stopPropagation()}
                   >
                     Terms & Conditions
-                  </span>
+                  </a>
                 </div>
               </div>
             )}
