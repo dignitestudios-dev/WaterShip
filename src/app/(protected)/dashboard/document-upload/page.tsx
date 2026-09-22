@@ -312,21 +312,21 @@ export default function DocumentUploadPage() {
             {selectedDocId ? (
               <>
                 <h1
-                  className="text-white font-semibold text-[32px] md:text-[40px] leading-[1.2] tracking-[-0.025em] text-center break-words max-w-full px-4"
+                  className="text-white font-semibold text-[32px] md:text-[40px] leading-[1.2] tracking-[-0.025em] text-center break-words [overflow-wrap:anywhere] break-all max-w-full px-4"
                   style={{ overflowWrap: "anywhere" }}
                 >
                   {selectedDoc?.title}
                 </h1>
-                <p className="text-[#E0E0E0] font-normal text-[16px] leading-[140%] text-center mt-[10px]">
+                <p className="text-[#E0E0E0] font-normal text-[16px] leading-[140%] text-center mt-[10px] max-w-full break-words [overflow-wrap:anywhere] break-all px-4">
                   {selectedDoc?.description || "Encrypted upload. Only your advisor can view these."}
                 </p>
               </>
             ) : (
               <>
-                <h1 className="text-white font-semibold text-[40px] leading-[60px] tracking-[-0.025em] text-center">
+                <h1 className="text-white font-semibold text-[40px] leading-[60px] tracking-[-0.025em] text-center max-w-full break-words [overflow-wrap:anywhere] break-all px-4">
                   Upload Your Documents
                 </h1>
-                <p className="text-[#E0E0E0] font-normal text-[16px] leading-[140%] text-center mt-[25px]">
+                <p className="text-[#E0E0E0] font-normal text-[16px] leading-[140%] text-center mt-[25px] max-w-full break-words [overflow-wrap:anywhere] break-all px-4">
                   Upload required documents to continue your onboarding process
                 </p>
 
@@ -436,14 +436,14 @@ export default function DocumentUploadPage() {
                       <div className="flex flex-col justify-center gap-[2px] min-w-0 flex-1">
                         <span
                           title={selectedDoc?.title}
-                          className="font-medium text-[12px] leading-[18px] tracking-[-0.01em] text-[#2A2A2A] break-words line-clamp-2"
+                          className="font-medium text-[12px] leading-[18px] tracking-[-0.01em] text-[#2A2A2A] break-words [overflow-wrap:anywhere] break-all line-clamp-2"
                           style={{ overflowWrap: "anywhere" }}
                         >
                           {selectedDoc?.title}
                         </span>
                         <span
                           title={displayFilename || undefined}
-                          className="font-medium text-[10px] leading-[15px] tracking-[-0.01em] text-[#525252] truncate block"
+                          className="font-medium text-[10px] leading-[15px] tracking-[-0.01em] text-[#525252] break-words [overflow-wrap:anywhere] break-all line-clamp-1 block"
                         >
                           {displayFilename}
                         </span>
@@ -529,7 +529,7 @@ export default function DocumentUploadPage() {
                       <div className="flex flex-col justify-center gap-[2px] min-w-0 flex-1">
                         <span
                           title={doc.title}
-                          className="font-medium text-[12px] leading-[18px] tracking-[-0.01em] text-[#2A2A2A] break-words line-clamp-2"
+                          className="font-medium text-[12px] leading-[18px] tracking-[-0.01em] text-[#2A2A2A] break-words [overflow-wrap:anywhere] break-all line-clamp-2"
                           style={{ overflowWrap: "anywhere" }}
                         >
                           {doc.title}
@@ -541,7 +541,7 @@ export default function DocumentUploadPage() {
                         </span>
                         <span
                           title={isUploaded ? filename || undefined : isArchived ? "Archived" : doc.description || undefined}
-                          className="font-medium text-[10px] leading-[15px] tracking-[-0.01em] text-[#525252] truncate block"
+                          className="font-medium text-[10px] leading-[15px] tracking-[-0.01em] text-[#525252] break-words [overflow-wrap:anywhere] break-all line-clamp-1 block"
                         >
                           {isDocUploading
                             ? "Uploading document..."

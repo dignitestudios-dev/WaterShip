@@ -78,10 +78,10 @@ export const QuestionnaireLayout = ({
 
         {!isLocked && (
           <>
-            <h1 className="text-white font-semibold text-[40px] leading-[60px] tracking-[-0.025em] text-center">
+            <h1 className="text-white font-semibold text-[40px] leading-[60px] tracking-[-0.025em] text-center max-w-full break-words [overflow-wrap:anywhere] break-all px-4">
               Financial Questionnaire
             </h1>
-            <p className="text-[#E0E0E0] font-normal text-[16px] leading-[140%] text-center mt-[25px] max-w-[683px]">
+            <p className="text-[#E0E0E0] font-normal text-[16px] leading-[140%] text-center mt-[25px] max-w-[683px] break-words [overflow-wrap:anywhere] break-all px-4">
               Help us understand your financial situation, goals, and preferences. This will only take a few minutes.
             </p>
 

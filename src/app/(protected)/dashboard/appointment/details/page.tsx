@@ -94,10 +94,10 @@ export default function AppointmentDetailsPage() {
       <div className="flex flex-col items-center w-full max-w-[799px] z-10 gap-[30px] mt-[100px] md:mt-[166px]">
         {/* Header */}
         <div className="flex flex-col items-center gap-[25px] w-full text-center px-4">
-          <h1 className="font-semibold text-[32px] md:text-[40px] leading-[1.2] tracking-[-0.025em] text-white">
+          <h1 className="font-semibold text-[32px] md:text-[40px] leading-[1.2] tracking-[-0.025em] text-white max-w-full break-words [overflow-wrap:anywhere] break-all px-4">
             Appointment Details
           </h1>
-          <p className="font-normal text-[16px] leading-[140%] text-[#E0E0E0] max-w-[470px]">
+          <p className="font-normal text-[16px] leading-[140%] text-[#E0E0E0] max-w-[470px] break-words [overflow-wrap:anywhere] break-all px-4">
             Here are the details of your scheduled appointment.
           </p>
 
@@ -130,37 +130,37 @@ export default function AppointmentDetailsPage() {
           <div className="w-[513px] max-w-[90%] min-h-[141px] py-[18px] mt-[40px] rounded-[17px] bg-gradient-to-br from-[#2186FF] to-[rgba(33,134,255,0.15)] flex flex-col justify-center px-[30px] z-10 relative shadow-lg">
             <div className="flex flex-col gap-[15px]">
               {/* Row 1: Date */}
-              <div className="flex items-center gap-[10px]">
+              <div className="flex items-center gap-[10px] min-w-0">
                 <CalendarDays className="w-[16px] h-[16px] text-[#E0E0E0] shrink-0" />
-                <span className="font-medium text-[14px] leading-[21px] tracking-[-0.01em] text-[#E0E0E0]">
+                <span className="font-medium text-[14px] leading-[21px] tracking-[-0.01em] text-[#E0E0E0] min-w-0 break-words [overflow-wrap:anywhere] break-all">
                   {displayDate}
                 </span>
               </div>
 
               {/* Row 2: Time */}
-              <div className="flex items-center gap-[10px]">
+              <div className="flex items-center gap-[10px] min-w-0">
                 <Clock className="w-[16px] h-[16px] text-[#E0E0E0] shrink-0" />
-                <span className="font-medium text-[14px] leading-[21px] tracking-[-0.01em] text-[#E0E0E0]">
+                <span className="font-medium text-[14px] leading-[21px] tracking-[-0.01em] text-[#E0E0E0] min-w-0 break-words [overflow-wrap:anywhere] break-all">
                   {displayTime}
                 </span>
               </div>
 
               {/* Row 3: Duration */}
-              <div className="flex items-center gap-[10px]">
+              <div className="flex items-center gap-[10px] min-w-0">
                 <Timer className="w-[16px] h-[16px] text-[#E0E0E0] shrink-0" />
-                <span className="font-medium text-[14px] leading-[21px] tracking-[-0.01em] text-[#E0E0E0]">
+                <span className="font-medium text-[14px] leading-[21px] tracking-[-0.01em] text-[#E0E0E0] min-w-0 break-words [overflow-wrap:anywhere] break-all">
                   {displayDuration}
                 </span>
               </div>
 
               {/* Row 4: Location */}
-              <div className="flex items-center gap-[10px]">
+              <div className="flex items-center gap-[10px] min-w-0">
                 {appointmentBooking?.isTeamsMeetingRequested ? (
                   <User className="w-[16px] h-[16px] text-[#E0E0E0] shrink-0" />
                 ) : (
                   <MapPin className="w-[16px] h-[16px] text-[#E0E0E0] shrink-0" />
                 )}
-                <span className="font-medium text-[14px] leading-[21px] tracking-[-0.01em] text-[#E0E0E0]">
+                <span className="font-medium text-[14px] leading-[21px] tracking-[-0.01em] text-[#E0E0E0] min-w-0 break-words [overflow-wrap:anywhere] break-all">
                   {displayLocation}
                 </span>
               </div>
@@ -169,15 +169,15 @@ export default function AppointmentDetailsPage() {
 
           {/* Bottom Sub Info Card */}
           <div className="w-[513px] max-w-[90%] min-h-[80px] py-[16px] mt-[20px] rounded-[17px] bg-white/15 flex flex-col justify-center px-[30px] gap-[8px] z-10 shadow-sm">
-            <div className="flex items-center gap-[10px]">
+            <div className="flex items-center gap-[10px] min-w-0">
               <LinkIcon className="w-[14px] h-[14px] text-white shrink-0" />
-              <span className="font-medium text-[14px] leading-[21px] tracking-[-0.01em] text-white">
+              <span className="font-medium text-[14px] leading-[21px] tracking-[-0.01em] text-white min-w-0 break-words [overflow-wrap:anywhere] break-all">
                 {appointmentBooking?.isTeamsMeetingRequested
                   ? "Microsoft Teams link will be emailed"
                   : "Confirmation details will be emailed"}
               </span>
             </div>
-            <p className="font-medium text-[12px] leading-[18px] tracking-[-0.01em] text-[#E0E0E0] pl-[24px]">
+            <p className="font-medium text-[12px] leading-[18px] tracking-[-0.01em] text-[#E0E0E0] pl-[24px] break-words [overflow-wrap:anywhere] break-all">
               Please be available 5 minutes before your scheduled time.
             </p>
           </div>

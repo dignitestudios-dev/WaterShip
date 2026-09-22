@@ -76,10 +76,10 @@ export default function RiskAssessmentPage() {
 
         {!isLocked && (
           <>
-            <h1 className="text-white font-semibold text-[40px] leading-[60px] tracking-[-0.025em] text-center">
+            <h1 className="text-white font-semibold text-[40px] leading-[60px] tracking-[-0.025em] text-center max-w-full break-words [overflow-wrap:anywhere] break-all px-4">
               Risk Assessment
             </h1>
-            <p className="text-[#E0E0E0] font-normal text-[16px] leading-[140%] text-center mt-[25px]">
+            <p className="text-[#E0E0E0] font-normal text-[16px] leading-[140%] text-center mt-[25px] max-w-full break-words [overflow-wrap:anywhere] break-all px-4">
               Complete your risk profile in a secure external assessment.
             </p>
 
@@ -102,10 +102,10 @@ export default function RiskAssessmentPage() {
               <div className="w-[79.49px] h-[79.49px] bg-white/15 rounded-full flex items-center justify-center mb-[25px]">
                 <Lock className="w-10 h-10 text-white" strokeWidth={2.5} />
               </div>
-              <h1 className="text-white font-semibold text-[26px] leading-[39px] tracking-[-0.025em] text-center mb-[10px]">
+              <h1 className="text-white font-semibold text-[26px] leading-[39px] tracking-[-0.025em] text-center mb-[10px] max-w-full break-words [overflow-wrap:anywhere] break-all px-4">
                 Finish Earlier Steps First
               </h1>
-              <p className="text-[#E0E0E0] font-normal text-[14px] leading-[21px] text-center">
+              <p className="text-[#E0E0E0] font-normal text-[14px] leading-[21px] text-center max-w-full break-words [overflow-wrap:anywhere] break-all px-4">
                 This step will become available once Step 1 is completed.
               </p>
             </div>
@@ -114,13 +114,13 @@ export default function RiskAssessmentPage() {
               
               {/* Blue Card */}
               <div className="w-full bg-[#2186FF] border border-[rgba(40,159,44,0.16)] rounded-[17px] p-[24px] flex flex-col gap-[15px]">
-                <span className="text-[#DDEBF8] font-medium text-[14px] leading-[21px] tracking-[-0.01em] uppercase">
+                <span className="text-[#DDEBF8] font-medium text-[14px] leading-[21px] tracking-[-0.01em] uppercase break-words [overflow-wrap:anywhere] break-all">
                   Powered by Nitrogen
                 </span>
-                <h2 className="text-white font-medium text-[16px] leading-[24px] tracking-[-0.01em]">
+                <h2 className="text-white font-medium text-[16px] leading-[24px] tracking-[-0.01em] break-words [overflow-wrap:anywhere] break-all">
                   Risk Profiling Assessment
                 </h2>
-                <p className="text-[#E0E0E0] font-medium text-[14px] leading-[21px] tracking-[-0.01em]">
+                <p className="text-[#E0E0E0] font-medium text-[14px] leading-[21px] tracking-[-0.01em] break-words [overflow-wrap:anywhere] break-all">
                   A science-based questionnaire to understand your risk tolerance.
                 </p>
               </div>

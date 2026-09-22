@@ -88,7 +88,7 @@ export const Stepper = ({
               style={{ left: `${step.left - 64}px` }}
             >
               <span className={cn(
-                "font-normal text-[12.73px] leading-[19px] tracking-[-0.01em] text-center",
+                "font-normal text-[12.73px] leading-[19px] tracking-[-0.01em] text-center max-w-full break-words [overflow-wrap:anywhere] break-all",
                 (isActive || isCompleted) ? "text-[#E0E0E0] opacity-100" : "text-[#E0E0E0] opacity-45"
               )}>
                 {step.label}

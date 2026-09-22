@@ -101,13 +101,13 @@ export const StepCard = ({
       </div>
       
       {/* Text Content */}
-      <div className="mt-[12px] flex flex-col items-center z-10 w-full px-4">
-        <h3 className="text-[#2A2A2A] text-[17px] font-medium leading-[24px] tracking-[-0.01em]">
+      <div className="mt-[12px] flex flex-col items-center z-10 w-full min-w-0 px-4">
+        <h3 className="text-[#2A2A2A] text-[17px] font-medium leading-[24px] tracking-[-0.01em] text-center w-full min-w-0 break-words [overflow-wrap:anywhere]">
           {title}
         </h3>
         {badge ? (
-          <div className="mt-1 flex flex-col items-center gap-[5px]">
-            <p className="text-[#525252] text-[13px] leading-[20px] tracking-[-0.01em]">
+          <div className="mt-1 flex flex-col items-center gap-[5px] w-full min-w-0">
+            <p className="text-[#525252] text-[13px] leading-[20px] tracking-[-0.01em] text-center w-full min-w-0 break-words [overflow-wrap:anywhere]">
               {subtitle}
             </p>
             {badge === "incomplete" && (
@@ -129,7 +129,7 @@ export const StepCard = ({
             )}
           </div>
         ) : (
-          <p className="text-[#525252] text-[13px] leading-[20px] tracking-[-0.01em] mt-[4px]">
+          <p className="text-[#525252] text-[13px] leading-[20px] tracking-[-0.01em] mt-[4px] text-center w-full min-w-0 break-words [overflow-wrap:anywhere]">
             {subtitle}
           </p>
         )}

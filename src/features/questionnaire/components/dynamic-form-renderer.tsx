@@ -321,7 +321,7 @@ export const DynamicFormRenderer = ({ questions, initialValues, onComplete, onSa
                       disabled={isDisabled}
                       value={typeof field.value === "string" ? field.value : ""}
                       className={cn(
-                        "bg-white/15 border-none rounded-[7px] text-white placeholder:text-white/50 h-[40px]! w-full pl-9",
+                        "bg-white/15 border-none rounded-[7px] text-white placeholder:text-white/50 h-[40px]! w-full min-w-0 max-w-full pl-9",
                         isDisabled && "cursor-not-allowed opacity-60"
                       )}
                     />
@@ -332,7 +332,7 @@ export const DynamicFormRenderer = ({ questions, initialValues, onComplete, onSa
               {/* Phone Input */}
               {isPhoneField(q) && (
                 <FormControl>
-                  <div className="relative w-full">
+                  <div className="relative w-full min-w-0">
                     <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50 pointer-events-none" />
                     <Input
                       type="tel"
@@ -346,7 +346,7 @@ export const DynamicFormRenderer = ({ questions, initialValues, onComplete, onSa
                         field.onChange(formatted);
                       }}
                       className={cn(
-                        "bg-white/15 border-none rounded-[7px] text-white placeholder:text-white/50 h-[40px]! w-full pl-9 font-medium",
+                        "bg-white/15 border-none rounded-[7px] text-white placeholder:text-white/50 h-[40px]! w-full min-w-0 max-w-full pl-9 font-medium",
                         isDisabled && "cursor-not-allowed opacity-60"
                       )}
                     />
@@ -364,7 +364,7 @@ export const DynamicFormRenderer = ({ questions, initialValues, onComplete, onSa
                     disabled={isDisabled}
                     value={typeof field.value === "string" || typeof field.value === "number" ? field.value : ""}
                     className={cn(
-                      "bg-white/15 border-none rounded-[7px] text-white placeholder:text-white/50 h-[40px]! w-full",
+                      "bg-white/15 border-none rounded-[7px] text-white placeholder:text-white/50 h-[40px]! w-full min-w-0 max-w-full",
                       isDisabled && "cursor-not-allowed opacity-60"
                     )}
                   />
@@ -384,14 +384,14 @@ export const DynamicFormRenderer = ({ questions, initialValues, onComplete, onSa
                           disabled={isDisabled}
                           onClick={() => !isDisabled && field.onChange(opt.value)}
                           className={cn(
-                            "min-h-[40px] py-2 px-5 rounded-[7px] text-[14px] font-medium transition-all flex items-center justify-center border max-w-full text-center break-words [overflow-wrap:anywhere]",
+                            "min-h-[40px] py-2 px-5 rounded-[7px] text-[14px] font-medium transition-all flex items-center justify-center border max-w-full text-center break-words [overflow-wrap:anywhere] break-all",
                             isDisabled ? "cursor-not-allowed opacity-60" : "cursor-pointer",
                             isSelected
                               ? "bg-[#2186FF] text-white border-[#2186FF] shadow-[0px_0px_15px_rgba(33,134,255,0.4)]"
                               : "bg-white/15 text-white border-transparent hover:bg-white/20"
                           )}
                         >
-                          <span className="break-words [overflow-wrap:anywhere]">{opt.label}</span>
+                          <span className="break-words [overflow-wrap:anywhere] break-all max-w-full">{opt.label}</span>
                         </button>
                       );
                     })}
@@ -412,14 +412,14 @@ export const DynamicFormRenderer = ({ questions, initialValues, onComplete, onSa
                           disabled={isDisabled}
                           onClick={() => !isDisabled && field.onChange(opt.value)}
                           className={cn(
-                            "min-h-[36px] py-1.5 px-4 rounded-[20px] text-[13px] font-medium transition-all flex items-center justify-center border max-w-full text-center break-words [overflow-wrap:anywhere]",
+                            "min-h-[36px] py-1.5 px-4 rounded-[20px] text-[13px] font-medium transition-all flex items-center justify-center border max-w-full text-center break-words [overflow-wrap:anywhere] break-all",
                             isDisabled ? "cursor-not-allowed opacity-60" : "cursor-pointer",
                             isSelected
                               ? "bg-[#2186FF] text-white border-[#2186FF] shadow-[0px_0px_15px_rgba(33,134,255,0.4)]"
                               : "bg-white/15 text-white border-transparent hover:bg-white/20"
                           )}
                         >
-                          <span className="break-words [overflow-wrap:anywhere]">{opt.label}</span>
+                          <span className="break-words [overflow-wrap:anywhere] break-all max-w-full">{opt.label}</span>
                         </button>
                       );
                     })}
@@ -432,10 +432,10 @@ export const DynamicFormRenderer = ({ questions, initialValues, onComplete, onSa
                 <Select onValueChange={field.onChange} value={field.value || ""} disabled={isDisabled}>
                   <FormControl>
                     <SelectTrigger className={cn(
-                      "bg-white/15 border-none rounded-[7px] text-white h-[40px]! w-full [&_svg]:text-white",
+                      "bg-white/15 border-none rounded-[7px] text-white h-[40px]! w-full min-w-0 max-w-full [&_svg]:text-white break-all",
                       isDisabled && "cursor-not-allowed opacity-60"
                     )}>
-                      <SelectValue placeholder={q.hintText || "Select"} className="text-white" />
+                      <SelectValue placeholder={q.hintText || "Select"} className="text-white break-all truncate" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent className="bg-[#034593] text-white border border-white/20 max-h-[250px] shadow-xl">
@@ -443,7 +443,7 @@ export const DynamicFormRenderer = ({ questions, initialValues, onComplete, onSa
                       <SelectItem
                         key={i}
                         value={opt.value}
-                        className="text-white focus:bg-white/20 focus:text-white cursor-pointer"
+                        className="text-white focus:bg-white/20 focus:text-white cursor-pointer break-all [overflow-wrap:anywhere]"
                       >
                         {opt.label}
                       </SelectItem>

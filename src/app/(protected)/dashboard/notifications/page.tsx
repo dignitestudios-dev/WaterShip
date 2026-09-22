@@ -161,15 +161,14 @@ export default function NotificationsPage() {
                       {/* Texts */}
                       <div className="flex flex-col gap-[4px] min-w-0 flex-1">
                         <h3
-                          className={`text-[14px] leading-[21px] tracking-[-0.01em] truncate ${isUnread ? "font-bold text-white" : "font-medium text-white/90"
+                          className={`text-[14px] leading-[21px] tracking-[-0.01em] break-words [overflow-wrap:anywhere] break-all ${isUnread ? "font-bold text-white" : "font-medium text-white/90"
                             }`}
                         >
                           {notif.title}
                         </h3>
                         {messageText && (
-                          <p className="font-normal text-[12px] leading-[18px]  text-[#E0E0E0] break-all ">
+                          <p className="font-normal text-[12px] leading-[18px] text-[#E0E0E0] break-words [overflow-wrap:anywhere] break-all">
                             {messageText}
-                            
                           </p>
                         )}
                       </div>

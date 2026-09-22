@@ -238,7 +238,7 @@ const DynamicQuestionnaireContent = () => {
 
   return (
     <QuestionnaireLayout currentStep={currentStep} totalSteps={maxStep}>
-      <div className="mt-[50px] text-[#FFFFFF] font-medium text-[14px] leading-[21px] tracking-[-0.01em] uppercase z-10">
+      <div className="mt-[50px] text-[#FFFFFF] font-medium text-[14px] leading-[21px] tracking-[-0.01em] uppercase z-10 text-center max-w-full break-words [overflow-wrap:anywhere] break-all px-4">
         {activeSubstep.stepName || activeSubstep.title}
       </div>
       <DynamicFormRenderer

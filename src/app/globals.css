@@ -117,13 +117,25 @@
 }
 
 @layer base {
-  * {
+  *,
+  *::before,
+  *::after {
     @apply border-border outline-ring/50;
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
   body {
     @apply bg-background text-foreground;
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
   html {
     @apply font-sans;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+  h1, h2, h3, h4, h5, h6, p, span, label, td, th, li, a, button, input, textarea {
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
 }
