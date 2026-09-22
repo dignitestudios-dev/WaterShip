@@ -73,7 +73,16 @@ export default function DocumentUploadPage() {
 
   const isRiskAssessmentCompleted =
     onboardingData?.riskAssessment?.status === "completed" || isRiskAssessmentStore;
+  const isAppointmentBooked =
+    onboardingData?.appointmentBooking?.status === "completed" ||
+    onboardingData?.booking?.status === "completed";
   const isLocked = !isRiskAssessmentCompleted;
+
+  useEffect(() => {
+    if (mounted && isAppointmentBooked) {
+      router.replace("/dashboard");
+    }
+  }, [mounted, isAppointmentBooked, router]);
 
   // Answers map for conditional requirements
   const savedAnswersMap = useMemo(() => {
@@ -172,7 +181,7 @@ export default function DocumentUploadPage() {
 
   const isAnyDocUploading = Object.values(uploadingDocs).some(Boolean);
 
-  if (!mounted || (isLoadingProgress && documents.length === 0)) {
+  if (!mounted || isAppointmentBooked || (isLoadingProgress && documents.length === 0)) {
     return <div className="w-full min-h-screen bg-gradient-to-b from-[#034593] to-[#01152D]" />;
   }
 

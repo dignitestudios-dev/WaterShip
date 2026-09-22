@@ -44,24 +44,37 @@ function DashboardContent() {
 
   // Step 3: Document Upload
   const uploadedDocuments = onboardingData?.documentUpload?.uploadedDocuments || [];
-  const uploadedCount = onboardingData?.documentUpload?.uploadedCount ?? uploadedDocuments.length;
+  const rawUploadedCount = onboardingData?.documentUpload?.uploadedCount;
   const totalRequiredDocs =
     onboardingData?.documentUpload?.totalRequiredCount ||
     onboardingData?.documentRequirements?.length ||
     rawData?.documentRequirements?.length ||
     4;
+  const uploadedCount =
+    typeof rawUploadedCount === "number"
+      ? rawUploadedCount
+      : Array.isArray(uploadedDocuments) && uploadedDocuments.length > 0
+        ? uploadedDocuments.length
+        : onboardingData?.documentUpload?.status === "completed"
+          ? totalRequiredDocs
+          : 0;
+
   const isDocumentUploadCompleted =
-    onboardingData?.documentUpload?.status === "completed" ||
-    (uploadedCount >= totalRequiredDocs && totalRequiredDocs > 0);
+    totalRequiredDocs > 0
+      ? uploadedCount >= totalRequiredDocs
+      : onboardingData?.documentUpload?.status === "completed";
+
+  const effectiveUploadedCount = Math.min(uploadedCount, totalRequiredDocs);
+
   const documentProgress = isDocumentUploadCompleted
     ? 100
-    : isRiskAssessmentCompleted
-      ? Math.round((uploadedCount / totalRequiredDocs) * 100)
+    : isRiskAssessmentCompleted && totalRequiredDocs > 0
+      ? Math.round((effectiveUploadedCount / totalRequiredDocs) * 100)
       : 0;
-  const documentSubtitle = isDocumentUploadCompleted
-    ? `${totalRequiredDocs} of ${totalRequiredDocs} steps completed`
-    : isRiskAssessmentCompleted
-      ? `${uploadedCount} of ${totalRequiredDocs} steps completed`
+
+  const documentSubtitle =
+    isRiskAssessmentCompleted || isDocumentUploadCompleted || effectiveUploadedCount > 0
+      ? `${effectiveUploadedCount} of ${totalRequiredDocs} steps completed`
       : `0 of ${totalRequiredDocs} steps completed`;
 
   // Step 4: Appointment Booking
@@ -73,7 +86,7 @@ function DashboardContent() {
     ? "Your Session has been booked"
     : isDocumentUploadCompleted
       ? "Start Book Appointment"
-      : "0 of 4 steps completed";
+      : "0 of 1 steps completed";
 
   // Overall Percent
   const overallPercent = onboardingData?.overallPercent ?? (
@@ -104,9 +117,9 @@ function DashboardContent() {
   return (
     <div className="flex flex-col items-center justify-start w-full min-h-full py-10 px-4">
       {/* Stepper Navigation */}
-      <Stepper 
-        isQuestionnaireCompleted={isQuestionnaireCompleted} 
-        isRiskAssessmentCompleted={isRiskAssessmentCompleted} 
+      <Stepper
+        isQuestionnaireCompleted={isQuestionnaireCompleted}
+        isRiskAssessmentCompleted={isRiskAssessmentCompleted}
         isDocumentUploadCompleted={isDocumentUploadCompleted}
         isAppointmentBooked={isAppointmentBooked}
         overallPercent={overallPercent}
@@ -120,10 +133,12 @@ function DashboardContent() {
           title="Step 01: Questionnaire"
           subtitle={questionnaireSubtitle}
           progress={questionnaireProgress}
+          totalSteps={totalQuestionnaireSteps}
+          completedSteps={isQuestionnaireCompleted ? totalQuestionnaireSteps : completedCount}
           isFullyCompleted={isQuestionnaireCompleted}
           onClick={() => router.push(isQuestionnaireCompleted ? "/dashboard/questionnaire/completed" : "/dashboard/questionnaire/start")}
         />
-        
+
         {/* Step 2 */}
         <StepCard
           stepNumber={2}
@@ -141,8 +156,10 @@ function DashboardContent() {
           title="Step 03: Document Upload"
           subtitle={documentSubtitle}
           progress={documentProgress}
+          totalSteps={totalRequiredDocs}
+          completedSteps={effectiveUploadedCount}
           isFullyCompleted={isDocumentUploadCompleted}
-          onClick={() => isRiskAssessmentCompleted ? router.push("/dashboard/document-upload") : undefined}
+          onClick={() => (!isAppointmentBooked && isRiskAssessmentCompleted) ? router.push("/dashboard/document-upload") : undefined}
         />
 
         {/* Step 4 */}
@@ -151,6 +168,8 @@ function DashboardContent() {
           title="Step 04: Appointment Booking"
           subtitle={appointmentSubtitle}
           progress={appointmentProgress}
+          totalSteps={1}
+          completedSteps={isAppointmentBooked ? 1 : 0}
           badge={isAppointmentBooked ? "button" : (isDocumentUploadCompleted ? undefined : "incomplete")}
           buttonText="View Details"
           isFullyCompleted={isAppointmentBooked}

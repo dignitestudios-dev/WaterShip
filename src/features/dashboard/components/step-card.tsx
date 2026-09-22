@@ -6,21 +6,54 @@ interface StepCardProps {
   title: string;
   subtitle: string;
   progress: number; // 0 to 100
+  totalSteps?: number;
+  completedSteps?: number;
   badge?: "incomplete" | "completed" | "button";
   buttonText?: string;
   isFullyCompleted?: boolean;
   onClick?: () => void;
 }
 
-export const StepCard = ({ stepNumber, title, subtitle, progress, badge, buttonText, isFullyCompleted, onClick }: StepCardProps) => {
+export const StepCard = ({
+  stepNumber,
+  title,
+  subtitle,
+  progress,
+  totalSteps,
+  completedSteps,
+  badge,
+  buttonText,
+  isFullyCompleted,
+  onClick,
+}: StepCardProps) => {
   const radius = 27.9;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (circumference * progress) / 100;
 
+  // Derive totalSteps and completedSteps if not explicitly provided
+  let derivedTotal = totalSteps;
+  let derivedCompleted = completedSteps;
+
+  if (derivedTotal === undefined) {
+    const match = subtitle.match(/(\d+)\s+of\s+(\d+)/i);
+    if (match) {
+      derivedCompleted = parseInt(match[1], 10);
+      derivedTotal = parseInt(match[2], 10);
+    }
+  }
+
+  const totalSegments = derivedTotal && derivedTotal > 0 ? derivedTotal : 4;
+  const effectiveCompletedSteps = derivedCompleted !== undefined
+    ? derivedCompleted
+    : (isFullyCompleted ? totalSegments : undefined);
+
   return (
     <div 
       onClick={onClick}
-      className="w-[343px] h-[185px] bg-[#EDEDED] rounded-[17px] relative overflow-hidden flex flex-col items-center justify-start cursor-pointer shadow-sm hover:shadow-md transition mx-auto"
+      className={cn(
+        "w-[343px] h-[185px] bg-[#EDEDED] rounded-[17px] relative overflow-hidden flex flex-col items-center justify-start shadow-sm transition mx-auto",
+        onClick ? "cursor-pointer hover:shadow-md" : "cursor-default"
+      )}
     >
       
       {/* Abstract blobs inside card */}
@@ -29,9 +62,9 @@ export const StepCard = ({ stepNumber, title, subtitle, progress, badge, buttonT
       {/* Chevron or Check Top Right */}
       {isFullyCompleted ? (
         <CheckCircle2 className="absolute top-[16px] right-[16px] w-[20px] h-[20px] text-[#22A042]" strokeWidth={2} />
-      ) : (
+      ) : onClick ? (
         <ChevronRight className="absolute top-[16px] right-[16px] w-[18px] h-[18px] text-[#034593]" strokeWidth={2} />
-      )}
+      ) : null}
 
       {/* Pie chart */}
       <div className="relative w-[62px] h-[62px] flex items-center justify-center mt-[15px]">
@@ -102,20 +135,28 @@ export const StepCard = ({ stepNumber, title, subtitle, progress, badge, buttonT
         )}
       </div>
       
-      {/* Bottom visual progress (4 lines) - Only for cards without badges */}
-      {!badge && (
-        <div className="absolute bottom-[24px] left-[63px] right-[63px] flex items-center justify-between gap-[2px] z-10 w-[217px]">
-          {[1, 2, 3, 4].map((i) => (
-            <div
-              key={i}
-              className={cn(
-                "w-[52.75px] h-0 border-[2px] rounded-full transition-all duration-500",
-                progress >= i * 25
-                  ? "border-[#034593] opacity-100"
-                  : "border-[#034593] opacity-45"
-              )}
-            />
-          ))}
+      {/* Bottom visual progress lines - Only for cards without badges */}
+      {!badge && totalSegments > 0 && (
+        <div className="absolute bottom-[24px] left-[63px] right-[63px] flex items-center gap-[3px] z-10 w-[217px]">
+          {Array.from({ length: totalSegments }, (_, idx) => idx + 1).map((i) => {
+            const isFilled =
+              isFullyCompleted ||
+              (effectiveCompletedSteps !== undefined
+                ? i <= effectiveCompletedSteps
+                : progress >= (i / totalSegments) * 100);
+
+            return (
+              <div
+                key={i}
+                className={cn(
+                  "flex-1 h-0 border-[2px] rounded-full transition-all duration-500",
+                  isFilled
+                    ? "border-[#034593] opacity-100"
+                    : "border-[#034593] opacity-45"
+                )}
+              />
+            );
+          })}
         </div>
       )}
     </div>

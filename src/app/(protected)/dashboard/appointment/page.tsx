@@ -86,7 +86,7 @@ export default function AppointmentPage() {
     onboardingData?.documentUpload?.status === "completed" ||
     Object.keys(uploadedDocuments).length >= 4;
   const isLocked = !isDocumentUploadCompleted;
-
+  console.log(isDocumentUploadCompleted, "isDocumentUploadCompleted", "isLocked", isLocked)
   // 8 visible days in calendar horizontal strip
   const visibleDays = useMemo(() => {
     const days = [];
@@ -417,8 +417,8 @@ export default function AppointmentPage() {
                             !isAvailable
                               ? "bg-white/5 opacity-40 cursor-not-allowed border border-white/5"
                               : isSelected
-                              ? "bg-gradient-to-br from-[#2186FF] to-[rgba(33,134,255,0.15)] border border-[rgba(114,114,114,0.15)] shadow-md"
-                              : "bg-white/15 hover:bg-white/20 border border-transparent cursor-pointer"
+                                ? "bg-gradient-to-br from-[#2186FF] to-[rgba(33,134,255,0.15)] border border-[rgba(114,114,114,0.15)] shadow-md"
+                                : "bg-white/15 hover:bg-white/20 border border-transparent cursor-pointer"
                           )}
                         >
                           <span
@@ -486,7 +486,7 @@ export default function AppointmentPage() {
       </AnimatePresence>
 
       {/* Booking Dialogs */}
-      <Dialog open={bookingState !== "idle"} onOpenChange={() => {}}>
+      <Dialog open={bookingState !== "idle"} onOpenChange={() => { }}>
         <DialogContent
           className="border-none w-[343px] p-0 rounded-[32px] overflow-hidden bg-transparent shadow-none"
           showCloseButton={false}

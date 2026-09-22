@@ -143,8 +143,8 @@ export default function NotificationsPage() {
                     key={notif._id}
                     onClick={() => handleNotificationClick(notif)}
                     className={`w-full min-h-[80px] border-[0.5px] rounded-[17px] flex items-center justify-between px-[20px] md:px-[30px] py-[20px] transition-all cursor-pointer ${isUnread
-                        ? "bg-white/20 border-[#2186FF]/50 shadow-[0_0_15px_rgba(33,134,255,0.15)] hover:bg-white/25"
-                        : "bg-white/10 border-[#727272]/15 hover:bg-white/15"
+                      ? "bg-white/20 border-[#2186FF]/50 shadow-[0_0_15px_rgba(33,134,255,0.15)] hover:bg-white/25"
+                      : "bg-white/10 border-[#727272]/15 hover:bg-white/15"
                       }`}
                   >
                     <div className="flex items-center gap-[15px] md:gap-[20px] min-w-0 flex-1 pr-2">
@@ -167,8 +167,9 @@ export default function NotificationsPage() {
                           {notif.title}
                         </h3>
                         {messageText && (
-                          <p className="font-normal text-[12px] leading-[18px]  text-[#E0E0E0] ">
+                          <p className="font-normal text-[12px] leading-[18px]  text-[#E0E0E0] break-all ">
                             {messageText}
+                            
                           </p>
                         )}
                       </div>
