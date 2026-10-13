@@ -28,15 +28,20 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
         <div className="absolute top-0 inset-x-0 h-[431px] bg-gradient-to-b from-[#023168] to-transparent opacity-80" />
 
         {/* Top Left Logo Area */}
-        <div className="absolute top-8 left-8 flex items-center gap-6 z-10">
-          <Image
-            src={ "/images/logo.webp"}
-            alt="Logo"
-            width={290}
-            height={296}
-            className="object-contain"
+
+        <div className="absolute  -top-10 -left-5">
+          <video
+            src="/images/watership_logo_animated.webm"
+            autoPlay
+            loop
+            muted
+            playsInline
+            preload="auto"
+            aria-label="WaterShip Logo"
+            className="w-[350px]  object-cover"
           />
         </div>
+
       </div>
 
       {/* Right Side (Form Area) */}

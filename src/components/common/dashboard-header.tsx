@@ -49,6 +49,7 @@ export const DashboardHeader = () => {
           priority
         />
       </div>
+      
 
       {/* Right: Profile */}
       {hasToken && (
