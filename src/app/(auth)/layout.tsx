@@ -1,11 +1,19 @@
 "use client"
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useState } from "react";
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname()
   console.log(pathname)
+  const [showWaterShip, setShowWaterShip] = useState(true);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setShowWaterShip((prev) => !prev);
+    }, 6000);
+
+    return () => clearInterval(interval);
+  }, []);
   return (
 
     <div className="w-full min-h-screen relative flex overflow-hidden shadow-2xl bg-linear-to-b from-[#034593] to-[#01152D]">
@@ -29,16 +37,25 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
 
         {/* Top Left Logo Area */}
 
-        <div className="absolute  -top-10 -left-5">
+        <div className="absolute -top-10 -left-4">
           <video
-            src="/images/watership_logo_animated.webm"
+            key={showWaterShip ? "watership" : "financial"}
+            src={
+              showWaterShip
+                ? "/images/watership_logo_animated.webm"
+                : "/images/Private_Financial_Counsel_3_transparent.webm"
+            }
             autoPlay
             loop
             muted
             playsInline
             preload="auto"
-            aria-label="WaterShip Logo"
-            className="w-[350px]  object-cover"
+            aria-label={
+              showWaterShip
+                ? "WaterShip Logo"
+                : "Private Financial Counsel Logo"
+            }
+            className="w-[350px] h-auto object-contain"
           />
         </div>
 
